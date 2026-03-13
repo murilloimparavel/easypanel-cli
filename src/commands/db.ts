@@ -24,7 +24,7 @@ export function registerDbCommand(program: Command): void {
     .action(async (project, name, cmdOpts, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       const s = spinner('Creating Redis instance...');
       try {
@@ -42,7 +42,7 @@ export function registerDbCommand(program: Command): void {
     .action(async (project, name, _, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       try {
         const client = getClient();
@@ -66,7 +66,7 @@ export function registerDbCommand(program: Command): void {
     .action(async (project, name, cmdOpts, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       const s = spinner('Creating MySQL instance...');
       try {
@@ -91,7 +91,7 @@ export function registerDbCommand(program: Command): void {
     .action(async (project, name, cmdOpts, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       const s = spinner('Creating PostgreSQL instance...');
       try {
@@ -111,7 +111,7 @@ export function registerDbCommand(program: Command): void {
     .action(async (type, project, name, cmdOpts, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       if (!['redis', 'mysql', 'postgres'].includes(type)) {
         console.error(chalk.red(`Invalid type "${type}". Must be redis, mysql, or postgres.`));

@@ -19,7 +19,7 @@ export function registerDockerCommand(program: Command): void {
     .action(async (cmdOpts, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       if (!cmdOpts.force) {
         try {
@@ -45,7 +45,7 @@ export function registerDockerCommand(program: Command): void {
     .action(async (cmdOpts, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       const client = getClient();
       const s = spinner('Pruning builder cache...');

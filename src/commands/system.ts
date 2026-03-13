@@ -21,7 +21,7 @@ export function registerSystemCommand(program: Command): void {
     .action(async (cmdOpts, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       try {
         const client = getClient();
@@ -42,7 +42,7 @@ export function registerSystemCommand(program: Command): void {
     .action(async (_, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       try {
         const client = getClient();
@@ -60,7 +60,7 @@ export function registerSystemCommand(program: Command): void {
     .action(async (cmdOpts, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       try {
         const client = getClient();
@@ -77,7 +77,7 @@ export function registerSystemCommand(program: Command): void {
     .action(async (service, cmdOpts, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       const target = service || 'easypanel';
       if (!['easypanel', 'traefik'].includes(target)) {

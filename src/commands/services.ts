@@ -20,7 +20,7 @@ export function registerServicesCommand(program: Command): void {
     .action(async (project, name, _, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       const s = spinner(`Creating service "${name}" in project "${project}"...`);
       try {
@@ -42,7 +42,7 @@ export function registerServicesCommand(program: Command): void {
       .action(async (project, name, _, cmd) => {
         const opts = cmd.optsWithGlobals() as GlobalOptions;
         loadConfig(opts.url, opts.token);
-        requireAuth();
+        requireAuth(opts);
 
         const gerund = action === 'stop' ? 'Stopping' : `${action.charAt(0).toUpperCase()}${action.slice(1)}ing`;
         const past = action === 'stop' ? 'stopped' : `${action}ed`;
@@ -64,7 +64,7 @@ export function registerServicesCommand(program: Command): void {
     .action(async (project, name, _, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       const s = spinner(`Redeploying "${project}/${name}"...`);
       try {
@@ -86,7 +86,7 @@ export function registerServicesCommand(program: Command): void {
     .action(async (project, name, cmdOpts, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       if (!cmdOpts.force) {
         try {
@@ -115,7 +115,7 @@ export function registerServicesCommand(program: Command): void {
     .action(async (project, name, _, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       try {
         const client = getClient();
@@ -142,7 +142,7 @@ export function registerServicesCommand(program: Command): void {
     .action(async (project, name, vars, _, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       const s = spinner('Updating environment variables...');
       try {
@@ -167,7 +167,7 @@ export function registerServicesCommand(program: Command): void {
     .action(async (project, name, cmdOpts, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       const hasOption = cmdOpts.memLimit !== undefined || cmdOpts.memReservation !== undefined
         || cmdOpts.cpuLimit !== undefined || cmdOpts.cpuReservation !== undefined;
@@ -201,7 +201,7 @@ export function registerServicesCommand(program: Command): void {
     .action(async (project, name, cmdOpts, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       try {
         const client = getClient();
@@ -265,7 +265,7 @@ export function registerServicesCommand(program: Command): void {
     .action(async (project, name, _, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       try {
         const client = getClient();
@@ -294,7 +294,7 @@ export function registerServicesCommand(program: Command): void {
     .action(async (project, name, cmdOpts, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       try {
         const client = getClient();

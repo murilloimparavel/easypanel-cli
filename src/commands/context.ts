@@ -45,12 +45,12 @@ export function registerContextCommand(program: Command): void {
   ctx
     .command('add <name>')
     .description('Add a new server context')
-    .requiredOption('--url <url>', 'EasyPanel URL')
-    .requiredOption('--token <token>', 'API token')
+    .requiredOption('--server-url <url>', 'EasyPanel URL')
+    .requiredOption('--api-token <token>', 'API token')
     .action((name, cmdOpts, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
-      addContext({ name, url: cmdOpts.url.replace(/\/+$/, ''), token: cmdOpts.token });
-      printSuccess(`Context "${name}" added at ${cmdOpts.url}`, opts);
+      addContext({ name, url: cmdOpts.serverUrl.replace(/\/+$/, ''), token: cmdOpts.apiToken });
+      printSuccess(`Context "${name}" added at ${cmdOpts.serverUrl}`, opts);
     });
 
   ctx

@@ -18,8 +18,8 @@ export function registerLoginCommand(program: Command): void {
   program
     .command('login')
     .description('Authenticate with an EasyPanel instance')
-    .option('--url <url>', 'EasyPanel URL')
-    .option('--token <token>', 'API token (skip email/password)')
+    .option('--server-url <url>', 'EasyPanel URL')
+    .option('--api-token <token>', 'API token (skip email/password)')
     .option('--name <name>', 'Context name (default: "default")')
     .option('--show', 'Show current config')
     .action(async (cmdOpts, cmd) => {
@@ -57,8 +57,9 @@ export function registerLoginCommand(program: Command): void {
 
       try {
         const name = cmdOpts.name || 'default';
-        let url = cmdOpts.url as string | undefined;
-        let token = cmdOpts.token as string | undefined;
+        // Use local flags first, fall back to global --url/--token
+        let url = (cmdOpts.serverUrl || opts.url) as string | undefined;
+        let token = (cmdOpts.apiToken || opts.token) as string | undefined;
 
         if (!url) {
           url = await input({ message: 'EasyPanel URL:', default: 'https://localhost:3000' });

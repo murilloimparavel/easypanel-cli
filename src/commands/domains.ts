@@ -20,13 +20,14 @@ export function registerDomainsCommand(program: Command): void {
     .action(async (project, service, _, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       try {
         const client = getClient();
-        const result = await client.listDomains(project, service) as any[];
+        const raw = await client.listDomains(project, service) as any;
+        const result: any[] = Array.isArray(raw) ? raw : (raw?.domains ?? raw?.data ?? []);
 
-        if (opts.json) { printJson(result); return; }
+        if (opts.json) { printJson(raw); return; }
 
         if (!result?.length) { console.log(chalk.dim('No domains configured.')); return; }
 
@@ -51,7 +52,7 @@ export function registerDomainsCommand(program: Command): void {
     .action(async (project, service, domain, cmdOpts, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       const s = spinner(`Adding domain ${chalk.cyan(domain)}...`);
       try {
@@ -72,7 +73,7 @@ export function registerDomainsCommand(program: Command): void {
     .action(async (project, service, domainId, _, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       const s = spinner('Removing domain...');
       try {
@@ -88,7 +89,7 @@ export function registerDomainsCommand(program: Command): void {
     .action(async (domain, _, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       try {
         const client = getClient();
@@ -110,7 +111,7 @@ export function registerDomainsCommand(program: Command): void {
     .action(async (project, service, domain, cmdOpts, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       const s = spinner(`Requesting SSL for ${domain}...`);
       try {
@@ -126,7 +127,7 @@ export function registerDomainsCommand(program: Command): void {
     .action(async (project, service, domain, _, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       try {
         const client = getClient();
@@ -144,7 +145,7 @@ export function registerDomainsCommand(program: Command): void {
     .action(async (project, service, domain, _, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       const s = spinner(`Renewing SSL for ${domain}...`);
       try {

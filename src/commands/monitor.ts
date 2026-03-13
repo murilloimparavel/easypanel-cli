@@ -20,7 +20,7 @@ export function registerMonitorCommand(program: Command): void {
     .action(async (_, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       try {
         const client = getClient();
@@ -37,7 +37,7 @@ export function registerMonitorCommand(program: Command): void {
     .action(async (_, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       try {
         const client = getClient();
@@ -64,7 +64,7 @@ export function registerMonitorCommand(program: Command): void {
     .action(async (cmdOpts, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       try {
         const client = getClient();
@@ -105,7 +105,7 @@ export function registerMonitorCommand(program: Command): void {
     .action(async (cmdOpts, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       try {
         const client = getClient();

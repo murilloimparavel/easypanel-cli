@@ -17,7 +17,7 @@ export function registerStatusCommand(program: Command): void {
     .action(async (_, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       try {
         const client = getClient();
@@ -43,14 +43,17 @@ export function registerStatusCommand(program: Command): void {
 
         // Projects
         if (projects.status === 'fulfilled') {
-          const p = projects.value as any[];
+          const raw = projects.value as any;
+          const p = Array.isArray(raw) ? raw : (raw?.projects ?? []);
+          const allServices = Array.isArray(raw) ? [] : (raw?.services ?? []);
           console.log(chalk.dim('  Projects:'), p.length);
 
           if (p.length > 0) {
             console.log('');
             const rows = p.map((proj: any) => {
-              const svcCount = proj.services?.length ?? 0;
-              const svcNames = (proj.services || []).map((s: any) => s.name || s.serviceName).join(', ');
+              const svcCount = allServices.filter((s: any) => s.projectName === proj.name).length || proj.services?.length || 0;
+              const svcNames = allServices.filter((s: any) => s.projectName === proj.name).map((s: any) => s.name).join(', ')
+                || (proj.services || []).map((s: any) => s.name || s.serviceName).join(', ');
               return [proj.name, String(svcCount), svcNames || '—'];
             });
             printTable(['Project', 'Services', 'Names'], rows, opts);

@@ -39,7 +39,7 @@ export function registerDeployCommand(program: Command): void {
     .action(async (project, service, image, cmdOpts, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       try {
         const client = getClient();
@@ -69,7 +69,7 @@ export function registerDeployCommand(program: Command): void {
     .action(async (project, service, repo, cmdOpts, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       try {
         const client = getClient();
@@ -99,7 +99,7 @@ export function registerDeployCommand(program: Command): void {
     .action(async (project, service, repo, cmdOpts, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       try {
         const client = getClient();

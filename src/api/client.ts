@@ -3,6 +3,11 @@
  * Handles authentication and all tRPC API calls
  */
 
+const EP_DEBUG = !!(process.env.EASYPANEL_DEBUG || process.env.EP_VERBOSE);
+function debugLog(...args: unknown[]): void {
+  if (EP_DEBUG) console.error(...args);
+}
+
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import { promisify } from 'util';
 import { exec } from 'child_process';
@@ -622,7 +627,7 @@ export class EasyPanelClient {
         // Handle authentication errors
         if (status === 401 && this.email && this.password) {
           try {
-            console.error('[EasyPanel] Token expired, re-authenticating...');
+            debugLog('[EasyPanel] Token expired, re-authenticating...');
             await this.authenticate();
 
             // Retry the original request
@@ -648,7 +653,7 @@ export class EasyPanelClient {
   async authenticate(): Promise<void> {
     if (!this.email || !this.password) {
       if (this.token) {
-        console.error('[EasyPanel] Using pre-configured token');
+        debugLog('[EasyPanel] Using pre-configured token');
         return;
       }
       throw new EasyPanelError({
@@ -677,7 +682,7 @@ export class EasyPanelClient {
       );
 
       this.token = response.data.result.data.json.token;
-      console.error('[EasyPanel] Authentication successful');
+      debugLog('[EasyPanel] Authentication successful');
     } catch (error) {
       if (error instanceof AxiosError) {
         throw this.createError(error, ErrorCategory.AUTHENTICATION, 'auth.login');
@@ -746,7 +751,7 @@ export class EasyPanelClient {
     }
 
     this.cacheStats.hits++;
-    console.error(`[EasyPanel] Cache hit for key: ${key}`);
+    debugLog(`[EasyPanel] Cache hit for key: ${key}`);
     return entry.data;
   }
 
@@ -772,7 +777,7 @@ export class EasyPanelClient {
       this.savePersistedCache();
     }
 
-    console.error(`[EasyPanel] Cached data for key: ${key} (TTL: ${entry.ttl}ms)`);
+    debugLog(`[EasyPanel] Cached data for key: ${key} (TTL: ${entry.ttl}ms)`);
   }
 
   /**
@@ -824,7 +829,7 @@ export class EasyPanelClient {
       }
     }
 
-    console.error(`[EasyPanel] Cache cleared${pattern ? ` (pattern: ${pattern})` : ''}`);
+    debugLog(`[EasyPanel] Cache cleared${pattern ? ` (pattern: ${pattern})` : ''}`);
   }
 
   /**
@@ -848,7 +853,7 @@ export class EasyPanelClient {
     if (!enabled) {
       this.clearCache();
     }
-    console.error(`[EasyPanel] Cache ${enabled ? 'enabled' : 'disabled'}`);
+    debugLog(`[EasyPanel] Cache ${enabled ? 'enabled' : 'disabled'}`);
   }
 
   /**
@@ -856,7 +861,7 @@ export class EasyPanelClient {
    */
   setCacheTTL(ttl: number): void {
     this.defaultTTL = ttl;
-    console.error(`[EasyPanel] Cache TTL set to ${ttl}ms`);
+    debugLog(`[EasyPanel] Cache TTL set to ${ttl}ms`);
   }
 
   /**
@@ -895,7 +900,7 @@ export class EasyPanelClient {
         });
 
         this.updateCacheStats();
-        console.error(`[EasyPanel] Loaded ${this.cache.size} entries from persistent cache`);
+        debugLog(`[EasyPanel] Loaded ${this.cache.size} entries from persistent cache`);
       }
     } catch (error) {
       console.error('[EasyPanel] Failed to load persistent cache:', error);
@@ -920,7 +925,7 @@ export class EasyPanelClient {
         globalThis.window.sessionStorage.setItem(this.storageKey, serialized);
       }
 
-      console.error(`[EasyPanel] Saved ${this.cache.size} entries to persistent cache`);
+      debugLog(`[EasyPanel] Saved ${this.cache.size} entries to persistent cache`);
     } catch (error) {
       console.error('[EasyPanel] Failed to save persistent cache:', error);
     }
@@ -943,7 +948,7 @@ export class EasyPanelClient {
       }
     }
 
-    console.error(`[EasyPanel] Persistent cache ${enabled ? 'enabled' : 'disabled'}`);
+    debugLog(`[EasyPanel] Persistent cache ${enabled ? 'enabled' : 'disabled'}`);
   }
 
   /**
@@ -1252,7 +1257,7 @@ export class EasyPanelClient {
     // Get invalidation rules for this procedure
     const rules = this.invalidationMap[procedure as keyof typeof this.invalidationMap];
     if (!rules) {
-      console.error(`[EasyPanel] No invalidation rules found for procedure: ${procedure}`);
+      debugLog(`[EasyPanel] No invalidation rules found for procedure: ${procedure}`);
       return;
     }
 
@@ -1300,7 +1305,7 @@ export class EasyPanelClient {
       });
     }
 
-    console.error(`[EasyPanel] Cache invalidated for procedure: ${procedure}`, {
+    debugLog(`[EasyPanel] Cache invalidated for procedure: ${procedure}`, {
       projectName,
       serviceName,
       rules

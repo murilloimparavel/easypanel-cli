@@ -20,22 +20,27 @@ export function registerProjectsCommand(program: Command): void {
     .action(async (_, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       try {
         const client = getClient();
-        const result = await client.listProjects() as any[];
+        const raw = await client.listProjects() as any;
 
-        if (opts.json) { printJson(result); return; }
+        // API returns { projects: [...], services: [...] } or array
+        const projects = Array.isArray(raw) ? raw : (raw?.projects ?? []);
+        const allServices = Array.isArray(raw) ? [] : (raw?.services ?? []);
 
-        if (!result || result.length === 0) {
+        if (opts.json) { printJson(projects); return; }
+
+        if (!projects || projects.length === 0) {
           console.log(chalk.dim('No projects found.'));
           return;
         }
 
-        const rows = result.map((p: any) => {
-          const services = p.services?.length ?? 0;
-          return [p.name, String(services), p.createdAt || '—'];
+        const rows = projects.map((p: any) => {
+          const svcCount = allServices.filter((s: any) => s.projectName === p.name).length
+            || p.services?.length || 0;
+          return [p.name, String(svcCount), p.createdAt || '—'];
         });
 
         printTable(['Name', 'Services', 'Created'], rows, opts);
@@ -50,7 +55,7 @@ export function registerProjectsCommand(program: Command): void {
     .action(async (name, _, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       const s = spinner(`Creating project "${name}"...`);
       try {
@@ -71,7 +76,7 @@ export function registerProjectsCommand(program: Command): void {
     .action(async (name, _, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       try {
         const client = getClient();
@@ -104,7 +109,7 @@ export function registerProjectsCommand(program: Command): void {
     .action(async (name, cmdOpts, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
-      requireAuth();
+      requireAuth(opts);
 
       if (!cmdOpts.force) {
         try {
