@@ -4,7 +4,7 @@
 
 import { UpgradeTip } from '../types/plan.js';
 
-const AFFILIATE_URL = 'https://easypanel.io?aff=7GNAmD';
+const AFFILIATE_URL = 'https://easypanel.io';
 
 export class UpgradeTipFormatter {
   /**

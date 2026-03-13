@@ -314,7 +314,7 @@ export class EasyPanelClient {
       });
       if (contextualMessage) {
         suggestions.push(contextualMessage);
-        suggestions.push(`🚀 Upgrade to Premium: https://easypanel.io?aff=7GNAmD`);
+        suggestions.push(`🚀 Upgrade to Premium: https://easypanel.io`);
       }
     }
 

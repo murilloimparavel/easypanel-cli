@@ -7,7 +7,7 @@
 
 > 🚀 **SUPERCHARGE your EasyPanel experience with AI-powered management**
 >
-> 💡 **FREE for open-source** → **PREMIUM for production** - [Upgrade now & support development](https://easypanel.io?aff=7GNAmD)
+> 💡 **FREE for open-source** → **PREMIUM for production** - [Upgrade now & support development](https://easypanel.io)
 >
 > 🎯 **5,000+ developers** already using EasyPanel to deploy 50,000+ applications
 
@@ -25,7 +25,7 @@
 | 🎯 Support | Community only | **24/7 Priority** | Resolve in minutes |
 | 👥 Team Members | 1 user | **Unlimited** | Scale your team |
 
-[**🚀 See Plans & Pricing →**](https://easypanel.io?aff=7GNAmD)
+[**🚀 See Plans & Pricing →**](https://easypanel.io)
 
 > 💰 **ROI Calculator**: Premium pays for itself in just 2 months with time savings alone!
 
@@ -55,7 +55,7 @@ claude mcp add easypanel npx easypanel-mcp
 "List all projects"
 ```
 
-> 💡 **Pro Tip**: Use Premium for unlimited projects and automated workflows - [Upgrade when you're ready](https://easypanel.io?aff=7GNAmD)
+> 💡 **Pro Tip**: Use Premium for unlimited projects and automated workflows - [Upgrade when you're ready](https://easypanel.io)
 
 ---
 
@@ -80,7 +80,7 @@ claude mcp add easypanel npx easypanel-mcp
 ✅ **Priority support for mission-critical apps**
 ✅ **Faster deployments for agile teams**
 
-[**🚀 Upgrade Now & Get 20% Off**](https://easypanel.io?aff=7GNAmD)
+[**🚀 Upgrade Now & Get 20% Off**](https://easypanel.io)
 *Limited time offer for open-source supporters*
 
 ---
@@ -121,7 +121,7 @@ claude mcp add easypanel npx easypanel-mcp
 >
 > Premium handles everything: issuance, renewal, monitoring, and alerts.
 >
-> [**Enable Automated SSL →**](https://easypanel.io?aff=7GNAmD)
+> [**Enable Automated SSL →**](https://easypanel.io)
 
 | Tool | Free | Premium |
 |------|------|---------|
@@ -150,7 +150,7 @@ claude mcp add easypanel npx easypanel-mcp
 >
 > Get real-time alerts, performance analytics, and predictive insights.
 >
-> [**Enable Advanced Monitoring →**](https://easypanel.io?aff=7GNAmD)
+> [**Enable Advanced Monitoring →**](https://easypanel.io)
 
 ---
 
@@ -164,7 +164,7 @@ claude mcp add easypanel npx easypanel-mcp
 | Agency (50+ sites) | Premium | Bulk operations needed |
 | Enterprise | Premium | Team management & SLA |
 
-[**🚀 Find Your Perfect Plan →**](https://easypanel.io?aff=7GNAmD)
+[**🚀 Find Your Perfect Plan →**](https://easypanel.io)
 
 ---
 
@@ -260,7 +260,7 @@ Set up custom alerts (Premium only)
    ```
 
 2. **Upgrade your account**
-   [**Upgrade Now →**](https://easypanel.io?aff=7GNAmD)
+   [**Upgrade Now →**](https://easypanel.io)
 
 3. **Access new features**
    ```bash
@@ -290,9 +290,9 @@ export CACHE_TTL=300
 ## 🆘 Support & Community
 
 ### 🎁 Premium Members (Priority Support)
-- [**24/7 Live Chat**](https://easypanel.io?aff=7GNAmD) - Response in minutes
+- [**24/7 Live Chat**](https://easypanel.io) - Response in minutes
 - [**Direct Email Access**](mailto:premium@easypanel.io) - Priority queue
-- [**Video Call Support**](https://easypanel.io?aff=7GNAmD) - Screen sharing available
+- [**Video Call Support**](https://easypanel.io) - Screen sharing available
 
 ### 💬 Community Support
 - 📖 [Documentation Wiki](https://github.com/sitp2k/easypanel-mcp/wiki)
@@ -310,7 +310,7 @@ Upgrade this week and get:
 - 📚 **Premium Setup Guide** (Value: $199)
 - 🚀 **1-on-1 Onboarding Call** (Value: $299)
 
-[**🚀 Claim Your Bonus →**](https://easypanel.io?aff=7GNAmD)
+[**🚀 Claim Your Bonus →**](https://easypanel.io)
 
 ### Why Your Upgrade Matters
 - ✅ Supports continued open-source development
@@ -325,7 +325,7 @@ Upgrade this week and get:
 This MCP server is **100% free and open-source** (MIT License).
 EasyPanel hosting fees apply for premium features.
 
-[**View EasyPanel Terms**](https://easypanel.io?aff=7GNAmD) |
+[**View EasyPanel Terms**](https://easypanel.io) |
 [**MIT License**](LICENSE)
 
 ---
@@ -334,7 +334,7 @@ EasyPanel hosting fees apply for premium features.
   <strong>Thank you for supporting open-source development!</strong><br>
   ❤️ Made with love by the MCP EasyPanel Server team<br>
   <br>
-  <a href="https://easypanel.io?aff=7GNAmD">
+  <a href="https://easypanel.io">
     <img src="https://img.shields.io/badge/Upgrade%20to%20Premium-❤️%20Support%20Open%20Source-red" alt="Upgrade to Premium">
   </a>
 </p>
