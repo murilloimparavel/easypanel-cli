@@ -30,6 +30,14 @@ async function waitForDeployment(client: any, project: string, service: string, 
 export function registerDeployCommand(program: Command): void {
   const deploy = program.command('deploy').description('Deploy services (create + deploy in one step)');
 
+  deploy.addHelpText('after', `
+Examples:
+  $ ep deploy image my-project my-service nginx:latest
+  $ ep deploy image my-project my-service ghcr.io/user/app:v1.0 --wait
+  $ ep deploy git my-project my-service https://github.com/user/repo --ref main
+  $ ep deploy dockerfile my-project my-service https://github.com/user/repo --dockerfile ./Dockerfile
+`);
+
   deploy
     .command('image <project> <service> <image>')
     .description('Deploy from a Docker image')

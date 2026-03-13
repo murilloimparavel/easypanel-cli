@@ -14,6 +14,15 @@ import {
 export function registerMonitorCommand(program: Command): void {
   const monitor = program.command('monitor').description('System monitoring and health checks');
 
+  monitor.addHelpText('after', `
+Examples:
+  $ ep monitor stats
+  $ ep monitor system
+  $ ep monitor docker
+  $ ep monitor docker --project my-project --sort cpu
+  $ ep monitor health --verbose
+`);
+
   monitor
     .command('stats')
     .description('Show advanced system statistics')

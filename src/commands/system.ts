@@ -13,6 +13,16 @@ import {
 export function registerSystemCommand(program: Command): void {
   const system = program.command('system').description('System information and management');
 
+  system.addHelpText('after', `
+Examples:
+  $ ep system ip
+  $ ep system ip --public-only
+  $ ep system domain
+  $ ep system info
+  $ ep system restart easypanel --force
+  $ ep system restart traefik
+`);
+
   system
     .command('ip')
     .description('Show server IP addresses')
@@ -48,7 +58,21 @@ export function registerSystemCommand(program: Command): void {
         const client = getClient();
         const result = await client.getPanelDomain() as any;
         if (opts.json) { printJson(result); return; }
-        console.log(result?.domain || result?.url || JSON.stringify(result));
+        if (result.panelUrl || result.serverUrl) {
+          console.log(chalk.bold('Panel URL:'), result.panelUrl || result.serverUrl || '—');
+        }
+        if (result.primaryDomain) {
+          console.log(chalk.bold('Primary Domain:'), result.primaryDomain);
+        }
+        if (result.allDomains && Array.isArray(result.allDomains)) {
+          result.allDomains.forEach((d: any) => {
+            const ssl = d.ssl ? chalk.green('SSL') : chalk.yellow('no SSL');
+            console.log(`  ${d.domain} (${d.type || 'unknown'}) ${ssl}`);
+          });
+        }
+        if (!result.panelUrl && !result.serverUrl && !result.primaryDomain && !result.allDomains) {
+          console.log(result?.domain || result?.url || JSON.stringify(result));
+        }
       } catch (err) { handleCliError(err, opts); }
     });
 
@@ -66,7 +90,28 @@ export function registerSystemCommand(program: Command): void {
         const client = getClient();
         const result = await client.getSystemInfo(cmdOpts.docker !== false, cmdOpts.network !== false, true) as any;
         if (opts.json) { printJson(result); return; }
-        console.log(JSON.stringify(result, null, 2));
+        console.log(chalk.bold('\nSystem Information\n'));
+        if (result.hostname) console.log(`  ${chalk.dim('Hostname:')}  ${result.hostname}`);
+        if (result.platform) console.log(`  ${chalk.dim('Platform:')}  ${result.platform} ${result.arch || ''}`);
+        if (result.os) {
+          console.log(`  ${chalk.dim('OS:')}        ${result.os.type || ''} ${result.os.release || ''}`);
+          if (result.os.uptime) console.log(`  ${chalk.dim('Uptime:')}    ${Math.floor(result.os.uptime / 3600)}h ${Math.floor((result.os.uptime % 3600) / 60)}m`);
+          if (result.os.loadAverage) console.log(`  ${chalk.dim('Load:')}      ${result.os.loadAverage.map((l: number) => l.toFixed(2)).join(', ')}`);
+        }
+        if (result.cpu) {
+          console.log(`  ${chalk.dim('CPU:')}       ${result.cpu.model || 'unknown'} (${result.cpu.cores || '?'} cores)`);
+        }
+        if (result.memory) {
+          const total = result.memory.total ? `${(result.memory.total / 1024 / 1024 / 1024).toFixed(1)}GB` : '?';
+          const used = result.memory.used ? `${(result.memory.used / 1024 / 1024 / 1024).toFixed(1)}GB` : '?';
+          console.log(`  ${chalk.dim('Memory:')}    ${used} / ${total}`);
+        }
+        if (result.disk) {
+          const total = result.disk.total ? `${(result.disk.total / 1024 / 1024 / 1024).toFixed(1)}GB` : '?';
+          const used = result.disk.used ? `${(result.disk.used / 1024 / 1024 / 1024).toFixed(1)}GB` : '?';
+          console.log(`  ${chalk.dim('Disk:')}      ${used} / ${total}`);
+        }
+        console.log('');
       } catch (err) { handleCliError(err, opts); }
     });
 

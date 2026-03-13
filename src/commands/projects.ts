@@ -8,11 +8,20 @@ import { getClient } from '../api/client.js';
 import { loadConfig } from '../utils/config.js';
 import {
   type GlobalOptions, printJson, printSuccess, printTable, handleCliError,
-  requireAuth, confirm, spinner,
+  requireAuth, confirm, spinner, timeAgo,
 } from '../utils/output.js';
 
 export function registerProjectsCommand(program: Command): void {
   const projects = program.command('projects').description('Manage EasyPanel projects');
+
+  projects.addHelpText('after', `
+Examples:
+  $ ep projects list
+  $ ep projects list --json
+  $ ep projects create my-app
+  $ ep projects inspect my-app
+  $ ep projects destroy my-app --force
+`);
 
   projects
     .command('list')
@@ -40,7 +49,7 @@ export function registerProjectsCommand(program: Command): void {
         const rows = projects.map((p: any) => {
           const svcCount = allServices.filter((s: any) => s.projectName === p.name).length
             || p.services?.length || 0;
-          return [p.name, String(svcCount), p.createdAt || '—'];
+          return [p.name, String(svcCount), timeAgo(p.createdAt)];
         });
 
         printTable(['Name', 'Services', 'Created'], rows, opts);

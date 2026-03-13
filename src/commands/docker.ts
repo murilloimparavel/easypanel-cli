@@ -12,6 +12,14 @@ import {
 export function registerDockerCommand(program: Command): void {
   const docker = program.command('docker').description('Docker cleanup operations');
 
+  docker.addHelpText('after', `
+Examples:
+  $ ep docker cleanup
+  $ ep docker cleanup --force
+  $ ep docker prune
+  $ ep docker prune --all
+`);
+
   docker
     .command('cleanup')
     .description('Remove unused Docker images')

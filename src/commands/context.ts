@@ -14,6 +14,14 @@ import {
 export function registerContextCommand(program: Command): void {
   const ctx = program.command('context').description('Manage multiple EasyPanel server contexts');
 
+  ctx.addHelpText('after', `
+Examples:
+  $ ep context list
+  $ ep context add staging --server-url https://staging.example.com --api-token my-token
+  $ ep context use staging
+  $ ep context remove staging
+`);
+
   ctx
     .command('list')
     .description('List all configured contexts')

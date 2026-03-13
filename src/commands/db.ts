@@ -13,6 +13,15 @@ import {
 export function registerDbCommand(program: Command): void {
   const db = program.command('db').description('Manage database services');
 
+  db.addHelpText('after', `
+Examples:
+  $ ep db redis create my-project my-redis --password secret123
+  $ ep db redis inspect my-project my-redis
+  $ ep db mysql create my-project my-db --db mydb --user admin --password pass --root-password rootpass
+  $ ep db postgres create my-project my-pg --db mydb --user admin --password pass
+  $ ep db destroy redis my-project my-redis --force
+`);
+
   // Redis
   const redis = db.command('redis').description('Redis database operations');
 

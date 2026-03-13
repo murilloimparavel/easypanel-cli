@@ -14,6 +14,16 @@ import {
 export function registerDomainsCommand(program: Command): void {
   const domains = program.command('domains').description('Manage domains and SSL certificates');
 
+  domains.addHelpText('after', `
+Examples:
+  $ ep domains list my-project my-service
+  $ ep domains add my-project my-service example.com --port 80 --https
+  $ ep domains remove my-project my-service domain-id-123
+  $ ep domains validate example.com
+  $ ep domains ssl enable my-project my-service example.com
+  $ ep domains ssl status my-project my-service example.com
+`);
+
   domains
     .command('list <project> <service>')
     .description('List all domains for a service')
