@@ -1,869 +1,389 @@
-# MCP EasyPanel Server
+# easypanel-cli
 
-[![npm version](https://badge.fury.io/js/easypanel-mcp.svg)](https://www.npmjs.com/package/easypanel-mcp)
-[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
-[![GitHub stars](https://img.shields.io/github/stars/sitp2k/easypanel-mcp?style=social)](https://github.com/sitp2k/easypanel-mcp)
-[![Multi-Client Support](https://img.shields.io/badge/🤖%20Multi-Client-Claude%20%7C%20Cursor%20%7C%20Windsurf%20%7C%20Kiro%20%7C%20Web%20IDEs-green)](https://github.com/sitp2k/easypanel-mcp)
+> Unofficial command-line tool for EasyPanel
 
-> 🚀 **SPONSORED BY EASYPANEL** - Support open source development through our link
->
-> 💎 **Multi-client MCP server for managing [EasyPanel](https://easypanel.io?aff=7GNAmD&utm_source=github&utm_medium=readme&utm_campaign=readme-optimization) deployments from Claude, Cursor, Windsurf, Kiro, and Web IDEs**
->
-> ⭐ **Star on GitHub** ⬆️ | [**🎯 Upgrade to Premium & Support Open Source**](https://easypanel.io?aff=7GNAmD&utm_source=github&utm_medium=readme&utm_campaign=readme-optimization)
+`easypanel-cli` (binary: `ep`) is a community-built CLI for [EasyPanel](https://easypanel.io) — the modern server control panel for Docker-based deployments. It covers the full lifecycle: authentication, project management, service deployment, database provisioning, domain/SSL management, log streaming, and system monitoring, all from your terminal.
 
-## 🤖 Universal AI IDE Support
+This project was forked from [`sitp2k/easypanel-mcp`](https://github.com/sitp2k/easypanel-mcp) and transformed from an MCP server into a proper CLI tool. MCP server mode is preserved for backward compatibility and AI IDE integration.
 
-MCP EasyPanel Server now supports **all major AI development tools**:
-- ✅ **Claude** - Full MCP support with streaming
-- ✅ **Cursor** - Optimized for developer workflows
-- ✅ **Windsurf** - Enhanced error handling
-- ✅ **Kiro** - REST API with synchronous execution
-- ✅ **Web IDEs** - CORS-enabled REST API
-- ✅ **Generic MCP** - Universal compatibility
-
-[**📖 View Client Setup Guide**](docs/CLIENT_SETUP.md) | [**🚀 Quick Start**](docs/QUICK_START.md)
+**Not affiliated with or endorsed by EasyPanel.**
 
 ---
 
-## 💎 Free vs Premium - Why Premium is a Game-Changer
+## Features
 
-| Feature | Free Version | 🏆 Premium Version |
-|---------|-------------|-------------------|
-| **Projects** | ⚠️ Limited (3 projects) | ✅ **Unlimited Projects** |
-| **Services** | ⚠️ Limited (5 services) | ✅ **Unlimited Services** |
-| **SSL Certificates** | ⚠️ Manual setup | ✅ **Free Auto SSL with Let's Encrypt** |
-| **Deployments** | ⚠️ Queue delays | ✅ **Priority Deployments** |
-| **Monitoring** | ⚠️ Basic metrics | ✅ **Advanced Monitoring & Alerts** |
-| **Support** | ⚠️ Community only | ✅ **Priority Support (24h response)** |
-| **Custom Domains** | ⚠️ 1 domain only | ✅ **Unlimited Custom Domains** |
-| **Database Backups** | ⚠️ Manual only | ✅ **Automated Daily Backups** |
-| **Security** | ⚠️ Basic protection | ✅ **Advanced Firewall & DDoS Protection** |
-
-### 🔥 **Support Open Source Development - Upgrade Through Our Link**
-
-[**🚀 Upgrade to EasyPanel Premium & Support Open Source**](https://easypanel.io?aff=7GNAmD&utm_source=github&utm_medium=readme&utm_campaign=readme-optimization)
-
-*When you upgrade through our link, you support continued development of this open-source MCP server while unlocking premium features!*
+- Multi-context support — manage multiple EasyPanel instances from a single config
+- One-command deploys — `ep deploy image`, `ep deploy git`, `ep deploy dockerfile`
+- Full service lifecycle — create, start, stop, restart, redeploy, destroy
+- Environment variable management — get and set env vars per service
+- Database provisioning — Redis, MySQL, PostgreSQL with connection string output
+- Domain and SSL management — add domains, request and renew Let's Encrypt certificates
+- Real-time log streaming — WebSocket-backed `--follow` mode
+- Resource monitoring — CPU, memory, disk, Docker container stats, health checks
+- System management — IP info, panel domain, restart EasyPanel/Traefik
+- Docker cleanup — prune unused images and builder cache
+- JSON output mode — `--json` flag for every command, suitable for scripting and piping
+- MCP server mode — `ep mcp` for Claude, Cursor, Windsurf integration
 
 ---
 
-## 🎯 Why Choose EasyPanel Premium?
+## Quick Start
 
-### 📈 **Scale Without Limits**
-- **Unlimited Projects** - Deploy all your apps without constraints
-- **Unlimited Services** - Run as many microservices, databases, and apps as you need
-- **Unlimited Domains** - Host multiple projects with custom domains
-
-### 🛡️ **Enterprise Security**
-- **Free SSL Certificates** - Automatic HTTPS for all your domains
-- **Advanced Firewall** - Protect against attacks and DDoS
-- **Automated Backups** - Daily backups with one-click restore
-
-### ⚡ **Performance & Support**
-- **Priority Build Queues** - Deploy 10x faster with priority access
-- **Advanced Monitoring** - Real-time alerts and detailed analytics
-- **24/7 Priority Support** - Get help when you need it most
-
-> 💡 **Pro Tip**: Most teams upgrade within 30 days once they see the productivity gains. Start with Premium and scale from day one!
-
-[**🎁 Upgrade Now to Support Open Source Development**](https://easypanel.io?aff=7GNAmD&utm_source=github&utm_medium=readme&utm_campaign=readme-optimization)
-
----
-
-## 🚀 One-Line Installation
-
-### Option 1: Install from npm (Recommended)
 ```bash
-npx easypanel-mcp-install
-```
+npm install -g easypanel-cli
 
-### Option 2: Clone and Build
-```bash
-git clone https://github.com/sitp2k/easypanel-mcp.git
-cd easypanel-mcp
-npm install && npm run build
-```
+# Authenticate
+ep login
 
-### Option 3: Install as Global Package
-```bash
-npm install -g easypanel-mcp
-```
+# List projects
+ep projects list
 
-> ⚠️ **Note**: This MCP server works with both Free and Premium [EasyPanel](https://easypanel.io?aff=7GNAmD&utm_source=github&utm_medium=readme&utm_campaign=readme-optimization). Upgrade to Premium to unlock advanced features!
+# Deploy a Docker image and wait for completion
+ep deploy image myproject myapp nginx:latest --wait
 
-## 🔧 Quick Setup for Your AI Client
-
-### For Claude Desktop
-```bash
-# The server auto-detects Claude when used with MCP
-easypanel-mcp --transport stdio
-```
-
-### For Cursor
-```bash
-# Optimized for Cursor with compact responses
-easypanel-mcp --client cursor --transport stdio
-```
-
-### For Windsurf
-```bash
-# Enhanced error handling for Windsurf
-easypanel-mcp --client windsurf --transport sse --port 3001
-```
-
-### For Kiro
-```bash
-# REST API for Kiro (synchronous mode)
-easypanel-mcp --client kiro --transport rest --rest-port 3002
-```
-
-### For Web IDEs
-```bash
-# CORS-enabled REST API for web integration
-easypanel-mcp --transport rest --rest-port 3002
-```
-
-### For All Clients (Development)
-```bash
-# Run all transports simultaneously
-easypanel-mcp --transport all --http-port 3001 --rest-api-port 3002
+# Stream live logs
+ep services logs myproject myapp --follow
 ```
 
 ---
 
-## 🎯 Quick Start
+## Installation
 
-### 🚀 **Option 1: Claude Code with Environment Variables (Easiest)**
-
-```bash
-# 1. Configure environment
-echo "EASYPANEL_URL=http://your-server-ip:3000" > ~/.mcp-easypanel.env
-echo "EASYPANEL_EMAIL=your-email@example.com" >> ~/.mcp-easypanel.env
-echo "EASYPANEL_PASSWORD=your-password" >> ~/.mcp-easypanel.env
-
-# 2. Add to Claude Code (reads from .env)
-claude mcp add easypanel npx easypanel-mcp
-
-# 3. Test connection
-echo "List all projects to verify connection"
-```
-
-### 🔧 **Option 2: Direct Configuration in Claude Code**
+### npm (global)
 
 ```bash
-# Add with explicit environment variables
-claude mcp add easypanel npx easypanel-mcp \
-  --env EASYPANEL_URL=http://your-server-ip:3000 \
-  --env EASYPANEL_EMAIL=your-email@example.com \
-  --env EASYPANEL_PASSWORD=your-password
+npm install -g easypanel-cli
 ```
 
-### 🏠 **Option 3: Local Project Setup**
+### npx (no install)
 
 ```bash
-# 1. Clone and setup
-git clone https://github.com/sitp2k/easypanel-mcp.git
-cd easypanel-mcp
-npm install && npm run build
-
-# 2. Create .env file
-cp .env.example .env
-# Edit .env with your credentials:
-# EASYPANEL_URL=http://your-server-ip:3000
-# EASYPANEL_EMAIL=your-email@example.com
-# EASYPANEL_PASSWORD=your-password
-
-# 3. Add to Claude Code
-claude mcp add easypanel node $(pwd)/dist/index.js
+npx easypanel-cli login
+npx easypanel-cli projects list
 ```
 
-### 🌍 **Option 4: Claude Desktop (Separate App)**
-
-Create/edit `~/.config/Claude/claude_desktop_config.json` (Linux) or `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS):
-
-```json
-{
-  "mcpServers": {
-    "easypanel": {
-      "command": "npx",
-      "args": ["easypanel-mcp"],
-      "env": {
-        "EASYPANEL_URL": "http://your-server-ip:3000",
-        "EASYPANEL_EMAIL": "your-email@example.com",
-        "EASYPANEL_PASSWORD": "your-password"
-      }
-    }
-  }
-}
-```
-
-### 💻 **Option 5: VS Code with Claude Extension**
-```json
-{
-  "mcp.servers": {
-    "easypanel": {
-      "command": "npx",
-      "args": ["easypanel-mcp"]
-    }
-  }
-}
-```
-
-#### **Cursor IDE**
-```json
-{
-  "mcp": {
-    "servers": {
-      "easypanel": {
-        "command": "npx",
-        "args": ["easypanel-mcp"]
-      }
-    }
-  }
-}
-```
-
-### 3. **Verify Installation**
+### From source
 
 ```bash
-# Test the connection
-npx easypanel-mcp-test
-
-# Or in Claude:
-"List all projects to verify the connection works"
-```
-
----
-
-## 🌐 SSE Transport - Real-time Updates
-
-The MCP EasyPanel Server now supports **Server-Sent Events (SSE) transport** for real-time progress monitoring and web-based dashboard integration!
-
-### 🚀 Quick Start with SSE
-
-```bash
-# Start server with SSE transport (default port 3001)
-easypanel-mcp --transport sse
-
-# Custom port
-easypanel-mcp --transport sse --port 8080
-```
-
-### 📊 Available Endpoints
-
-- `POST /mcp` - Main MCP endpoint for tool execution
-- `GET /progress/{sessionId}` - Real-time progress stream via SSE
-- `GET /health` - Server health check
-- `GET /connections` - Active connections monitor
-
-### 🔄 Real-time Progress Support
-
-Long-running operations now stream live progress:
-- **Docker Cleanup**: Image cleanup, container removal, volume pruning
-- **System Operations**: Full system prune, project-specific cleanup
-- **Status Updates**: Progress percentage, status messages, completion events
-
-### 🌐 Web Dashboard
-
-An example HTML client is included at `examples/sse-client.html`:
-1. Start server: `easypanel-mcp --transport sse`
-2. Open `examples/sse-client.html` in your browser
-3. Execute Docker operations with live progress tracking
-
-### 📖 Full Documentation
-See [docs/SSE_TRANSPORT.md](docs/SSE_TRANSPORT.md) for complete SSE transport documentation.
-
----
-
-## ✨ Premium Features You'll Love
-
-### 🏗️ **Project Management**
-- Create, list, inspect, and delete projects
-- Real-time project status tracking
-- Service orchestration within projects
-- **Premium**: Unlimited projects and services
-
-### 🐳 **Application Services**
-- Deploy from Docker images, Git repositories, or Dockerfiles
-- Start, stop, restart, and redeploy services
-- Update environment variables and resource limits
-- Build logs access and monitoring
-- **Premium**: Priority deployments and advanced scaling
-
-### 🗄️ **Database Services**
-- Create and manage Redis, MySQL, and PostgreSQL instances
-- Automatic connection string generation
-- Database credentials management
-- **Premium**: Automated daily backups and one-click restore
-
-### 🌐 **Domain & SSL Management**
-- Add/remove custom domains
-- **Premium**: Automatic HTTPS with Let's Encrypt
-- **Premium**: Free SSL certificates for all domains
-- Custom SSL certificate upload
-- Certificate renewal management
-- Domain validation and DNS setup
-- **Premium**: Unlimited domains (vs 1 on free)
-
-### 📊 **Monitoring & Logs**
-- Real-time service statistics (CPU, memory, network)
-- Container logs streaming and search
-- Performance metrics tracking
-- Log filtering and analysis
-- **Premium**: Advanced monitoring with alerts and notifications
-
-### 🔐 **Enterprise Security**
-- JWT token-based authentication
-- Secure credential management
-- Session persistence
-- Error handling with retry logic
-- **Premium**: Advanced firewall and DDoS protection
-- **Premium**: Security audit logs and compliance
-- 🔒 **CVE-2025-55152 Secure** - Built with pure Node.js/TypeScript, no React dependencies
-
----
-
-## 🛡️ Security Notice
-
-### 🔒 **CVE-2025-55152 Safe Zone**
-This MCP EasyPanel Server is **100% immune** to the Critical React Server Components vulnerability (CVE-2025-55152, CVSS 10.0).
-
-#### Why We're Bulletproof:
-- ✅ **Zero React Dependencies** - Pure Node.js/TypeScript architecture
-- ✅ **No Server Components** - MCP Protocol, not React RSC
-- ✅ **Minimal Attack Surface** - Only 3 core dependencies (`@modelcontextprotocol/sdk`, `axios`, `zod`)
-- ✅ **Server-Side Only** - No frontend attack vectors
-
-#### While Others Panic, You're Safe:
-- 🚨 React apps worldwide are rushing to patch CVE-2025-55152
-- 🛡️ Your MCP EasyPanel Server was never at risk
-- 😌 Sleep well knowing your hosting management is secure
-
-> **Peace of Mind Included**: Focus on deploying great apps, not patching vulnerabilities.
-
----
-
-## 📋 IDE-Specific Configuration
-
-### Claude Desktop Configuration
-
-**Linux**: `~/.config/Claude/claude_desktop_config.json`
-**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-
-```json
-{
-  "mcpServers": {
-    "easypanel": {
-      "command": "node",
-      "args": ["/absolute/path/to/easypanel-mcp/dist/index.js"],
-      "env": {
-        "EASYPANEL_URL": "http://your-server-ip:3000",
-        "EASYPANEL_EMAIL": "admin@example.com",
-        "EASYPANEL_PASSWORD": "your-password"
-      }
-    }
-  }
-}
-```
-
-### Claude Code Project Configuration
-
-Create `.claude/mcp.json` in your project:
-
-```json
-{
-  "mcpServers": {
-    "easypanel": {
-      "command": "npx",
-      "args": ["easypanel-mcp@latest"],
-      "env": {
-        "EASYPANEL_URL": "http://your-server-ip:3000",
-        "EASYPANEL_EMAIL": "admin@example.com",
-        "EASYPANEL_PASSWORD": "your-password"
-      }
-    }
-  }
-}
-```
-
-### VS Code with Claude Extension
-
-Add to your `.vscode/settings.json`:
-
-```json
-{
-  "claude.mcp.servers": {
-    "easypanel": {
-      "command": "npx",
-      "args": ["easypanel-mcp"]
-    }
-  },
-  "claude.env": {
-    "EASYPANEL_URL": "http://your-server-ip:3000",
-    "EASYPANEL_EMAIL": "admin@example.com",
-    "EASYPANEL_PASSWORD": "your-password"
-  }
-}
-```
-
----
-
-## 🛠️ Available Tools
-
-### 📁 Project Management
-
-| Tool | Description | Example |
-|------|-------------|---------|
-| `list_projects` | List all projects and their services | "Show me all my projects" |
-| `create_project` | Create a new project | "Create a project called 'webapp'" |
-| `inspect_project` | Get detailed project information | "Inspect the 'webapp' project" |
-| `destroy_project` | Delete a project | "Delete the project 'old-project'" |
-
-### 🐳 Application Services
-
-| Tool | Description | Example |
-|------|-------------|---------|
-| `create_app_service` | Create a new app service | "Create an app service 'api' in project 'webapp'" |
-| `deploy_from_image` | Deploy from Docker image | "Deploy nginx:latest to service 'web'" |
-| `deploy_from_git` | Deploy from Git repository | "Deploy from https://github.com/user/repo.git" |
-| `deploy_from_dockerfile` | Deploy using Dockerfile | "Deploy the current directory using Dockerfile" |
-| `start_service` | Start a stopped service | "Start service 'api' in project 'webapp'" |
-| `stop_service` | Stop a running service | "Stop service 'api'" |
-| `restart_service` | Restart a service | "Restart the 'api' service" |
-| `redeploy_service` | Trigger new deployment | "Redeploy the 'api' service" |
-| `destroy_service` | Delete a service | "Delete the service 'old-api'" |
-| `update_env` | Update environment variables | "Set DATABASE_URL=postgresql://..." |
-| `update_resources` | Update memory/CPU limits | "Set memory to 2048MB and CPU to 2 cores" |
-| `get_service_logs` | Get service logs | "Show me the last 100 lines of logs" |
-| `get_service_stats` | Get resource statistics | "Show CPU and memory usage for 'api'" |
-
-### 🗄️ Database Services
-
-| Tool | Description | Example |
-|------|-------------|---------|
-| `create_redis` | Create Redis instance | "Create a Redis database called 'cache'" |
-| `inspect_redis` | Get Redis connection info | "Show Redis connection details" |
-| `create_mysql` | Create MySQL database | "Create MySQL db 'mydb' with user 'app'" |
-| `create_postgres` | Create PostgreSQL database | "Create PostgreSQL db 'mydb'" |
-| `destroy_db_service` | Delete database service | "Delete Redis service 'cache'" |
-| `update_redis_password` | Update Redis password | "Update Redis 'cache' password" |
-
-### 🌐 Domain & SSL Management (Premium Features)
-
-| Tool | Description | Example |
-|------|-------------|---------|
-| `add_domain` | Add custom domain to service | "Add example.com to service 'web'" |
-| `remove_domain` | Remove domain from service | "Remove domain with ID '123'" |
-| `list_domains` | List all domains for service | "Show all domains for service 'web'" |
-| `validate_domain` | Validate domain and DNS | "Validate domain setup for example.com" |
-| `enable_https` | Enable HTTPS with Let's Encrypt | "Enable HTTPS for example.com" |
-| `disable_https` | Disable HTTPS for domain | "Disable HTTPS for example.com" |
-| `renew_certificate` | Renew SSL certificate | "Renew SSL certificate for domain" |
-| `get_certificate` | Get SSL certificate details | "Show SSL certificate info" |
-| `upload_custom_certificate` | Upload custom SSL cert | "Upload custom certificate" |
-
-### 🔍 License Management
-
-| Tool | Description | Example |
-|------|-------------|---------|
-| `get_license_status` | Check license status | "Show current EasyPanel license status" |
-| `get_user_info` | Get user information | "Display user account details" |
-| `activate_license` | Activate license | "Activate EasyPanel Premium license" |
-
-### 📊 Advanced Monitoring
-
-| Tool | Description | Example |
-|------|-------------|---------|
-| `get_advanced_stats` | System-wide statistics | "Show advanced system stats" |
-| `get_system_stats` | CPU, memory, disk stats | "Display system resource usage" |
-| `get_docker_task_stats` | Container statistics | "Show Docker container metrics" |
-| `get_monitor_table_data` | Dashboard data | "Get monitoring dashboard data" |
-
----
-
-## 💡 Usage Examples
-
-### 🚀 Deploy a Full-Stack Application
-
-```text
-Create a project called "myapp"
-Create a PostgreSQL database called "db" with user "app" and password "secret123"
-Create an app service called "api"
-Set environment variables:
-- DATABASE_URL=postgresql://app:secret123@myapp_db:5432/myapp
-- NODE_ENV=production
-- PORT=3000
-Deploy the API from https://github.com/user/api.git
-Create another service called "frontend"
-Deploy the frontend from the current directory using Dockerfile
-Add domain myapp.com to the frontend service
-Enable HTTPS for myapp.com
-```
-
-### 📊 Monitor and Scale
-
-```text
-Show me the resource usage for all services in project "myapp"
-Get the last 50 lines of logs from the "api" service
-Update resources for service "api":
-- Memory limit: 2048 MB
-- CPU limit: 2.0 cores
-Restart the "api" service to apply changes
-```
-
-### 🔐 SSL Certificate Management
-
-```text
-Add domain api.example.com to service "api"
-Validate the domain setup
-Enable HTTPS for api.example.com with email admin@example.com
-Check the certificate details
-Upload a custom certificate for legacy.example.com
-```
-
-### 🗃️ Database Operations
-
-```text
-Create a Redis cache instance called "session-store"
-Create a MySQL database with:
-- Database name: "production"
-- User: "app"
-- Password: "secure_password"
-- Host: "mysql"
-Show connection details for both databases
-```
-
----
-
-## 🔧 Advanced Configuration
-
-### Custom MCP Server Path
-
-```json
-{
-  "mcpServers": {
-    "easypanel": {
-      "command": "node",
-      "args": ["/custom/path/to/dist/index.js"],
-      "cwd": "/workspace"
-    }
-  }
-}
-```
-
-### Using Environment Variables in Production
-
-```bash
-# Production setup with systemd
-sudo tee /etc/systemd/system/mcp-easypanel.service > /dev/null <<EOF
-[Unit]
-Description=MCP EasyPanel Server
-After=network.target
-
-[Service]
-Type=simple
-User=mcp
-Environment=EASYPANEL_URL=https://panel.example.com
-Environment=EASYPANEL_EMAIL=claude@example.com
-Environment=EASYPANEL_PASSWORD=\${EASYPANEL_PASSWORD}
-Environment=CACHE_TTL=600
-ExecStart=/usr/bin/node /opt/easypanel-mcp/dist/index.js
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-sudo systemctl enable mcp-easypanel
-sudo systemctl start mcp-easypanel
-```
-
-### Docker Deployment
-
-```dockerfile
-FROM node:18-alpine
-
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-
-COPY dist/ ./dist/
-RUN chmod +x ./dist/index.js
-
-ENV NODE_ENV=production
-EXPOSE 3000
-
-CMD ["node", "dist/index.js"]
-```
-
-```yaml
-# docker-compose.yml
-version: '3.8'
-services:
-  mcp-easypanel:
-    build: .
-    environment:
-      - EASYPANEL_URL=${EASYPANEL_URL}
-      - EASYPANEL_EMAIL=${EASYPANEL_EMAIL}
-      - EASYPANEL_PASSWORD=${EASYPANEL_PASSWORD}
-    restart: unless-stopped
-```
-
----
-
-## 🛠️ Development Setup
-
-### Prerequisites
-
-- Node.js >= 18.0.0
-- TypeScript >= 5.0.0
-- Git
-- An [EasyPanel](https://easypanel.io?aff=7GNAmD&utm_source=github&utm_medium=readme&utm_campaign=readme-optimization) instance (free tier works perfectly!)
-
-### Local Development
-
-```bash
-# Clone the repository
-git clone https://github.com/sitp2k/easypanel-mcp.git
-cd easypanel-mcp
-
-# Install dependencies
+git clone https://github.com/YOUR_ORG/easypanel-cli.git
+cd easypanel-cli
 npm install
-
-# Development mode with hot reload
-npm run watch
-
-# Run directly with tsx
-npm run dev
-
-# Run tests
-npm test
-
-# Build for production
 npm run build
-
-# Run the built version
-npm start
+npm link
 ```
 
-### Project Structure
+Node.js 18 or later is required.
 
-```
-easypanel-mcp/
-├── src/
-│   ├── api/           # EasyPanel API client
-│   ├── tools/         # MCP tool implementations
-│   ├── types/         # TypeScript type definitions
-│   └── index.ts       # Main server entry point
-├── tests/             # Test files
-├── docs/              # Documentation
-├── examples/          # Usage examples
-├── dist/              # Compiled JavaScript
-└── package.json
+---
+
+## Authentication
+
+### Interactive login
+
+```bash
+ep login
 ```
 
-### Adding New Tools
+Prompts for your EasyPanel URL, email, and password. Saves credentials to `~/.config/easypanel/config.json`.
 
-1. Create a new tool file in `src/tools/`
-2. Export a tools object and handler function
-3. Import and register in `src/index.ts`
+### Token-based login
 
-Example:
+```bash
+ep login --url https://panel.example.com --token YOUR_API_TOKEN
+```
 
-```typescript
-// src/tools/mytool.ts
-export const myTool = {
-  name: 'my_tool',
-  description: 'My custom tool',
-  inputSchema: {
-    type: 'object',
-    properties: { /* ... */ },
-    required: [/* ... */]
+### Named contexts (multi-server)
+
+```bash
+ep login --url https://panel.example.com --token TOKEN --name production
+ep login --url https://staging.example.com --token TOKEN --name staging
+```
+
+### Environment variables
+
+You can override the active context with environment variables:
+
+```bash
+export EASYPANEL_URL=https://panel.example.com
+export EASYPANEL_TOKEN=your_api_token
+```
+
+Environment variables take precedence over the config file when `--url` or `--token` are not passed on the command line.
+
+### Show current config
+
+```bash
+ep login --show
+ep whoami
+ep logout
+```
+
+---
+
+## Commands
+
+### Global flags
+
+These flags work with every command:
+
+| Flag | Description |
+|---|---|
+| `--json` | Output raw JSON (suitable for piping and scripting) |
+| `--quiet` | Minimal output |
+| `--verbose` | Enable debug logging |
+| `--url <url>` | Override EasyPanel URL for this invocation |
+| `--token <token>` | Override API token for this invocation |
+
+---
+
+### context — Multi-server management
+
+```bash
+ep context list                                    # List all configured contexts
+ep context add staging --url <url> --token <tok>   # Add a context
+ep context use staging                             # Switch active context
+ep context remove staging                          # Remove a context
+```
+
+---
+
+### projects — Project management
+
+```bash
+ep projects list                  # List all projects
+ep projects create myproject      # Create a project
+ep projects inspect myproject     # Show project details and services
+ep projects destroy myproject     # Delete a project and all its services
+ep projects destroy myproject -f  # Skip confirmation prompt
+```
+
+---
+
+### services — Service lifecycle
+
+```bash
+# Create and lifecycle
+ep services create myproject myapp
+ep services start myproject myapp
+ep services stop myproject myapp
+ep services restart myproject myapp
+ep services redeploy myproject myapp
+ep services destroy myproject myapp
+
+# Environment variables
+ep services env get myproject myapp
+ep services env set myproject myapp NODE_ENV=production PORT=3000
+
+# Resource limits
+ep services resources myproject myapp --mem-limit 512 --cpu-limit 0.5
+
+# Logs
+ep services logs myproject myapp                  # Last 100 lines
+ep services logs myproject myapp -n 500           # Last 500 lines
+ep services logs myproject myapp --follow         # Stream in real-time
+ep services logs myproject myapp --search "error"
+
+# Stats and build status
+ep services stats myproject myapp
+ep services build-status myproject myapp
+```
+
+---
+
+### deploy — One-step deploy shortcuts
+
+These commands create the service (if it does not exist) and trigger a deployment in a single step.
+
+```bash
+# From a Docker image
+ep deploy image myproject myapp nginx:latest
+ep deploy image myproject myapp ghcr.io/org/app:sha-abc --username user --password token
+ep deploy image myproject myapp nginx:latest --wait
+
+# From a Git repo (Nixpacks build)
+ep deploy git myproject myapp https://github.com/org/repo
+ep deploy git myproject myapp https://github.com/org/repo --ref develop
+ep deploy git myproject myapp https://github.com/org/repo --wait
+
+# From a Dockerfile in a Git repo
+ep deploy dockerfile myproject myapp https://github.com/org/repo
+ep deploy dockerfile myproject myapp https://github.com/org/repo --dockerfile ./docker/Dockerfile
+ep deploy dockerfile myproject myapp https://github.com/org/repo --wait
+```
+
+`--wait` polls until the deployment finishes and exits with a non-zero code on failure, making it suitable for CI pipelines.
+
+---
+
+### db — Database services
+
+```bash
+# Redis
+ep db redis create myproject myredis --password secret
+ep db redis inspect myproject myredis
+
+# MySQL
+ep db mysql create myproject mydb --db appdb --user appuser --password secret --root-password rootsecret
+
+# PostgreSQL
+ep db postgres create myproject mydb --db appdb --user appuser --password secret
+
+# Destroy any database type
+ep db destroy redis myproject myredis
+ep db destroy postgres myproject mydb -f
+```
+
+Connection strings are printed on creation.
+
+---
+
+### domains — Domain and SSL management
+
+```bash
+# Domains
+ep domains list myproject myapp
+ep domains add myproject myapp app.example.com --port 3000 --https
+ep domains remove myproject myapp <domainId>
+ep domains validate app.example.com
+
+# SSL certificates (Let's Encrypt)
+ep domains ssl enable myproject myapp app.example.com --email admin@example.com
+ep domains ssl status myproject myapp app.example.com
+ep domains ssl renew myproject myapp app.example.com
+```
+
+---
+
+### monitor — System monitoring
+
+```bash
+ep monitor system                            # CPU, memory, disk, uptime
+ep monitor stats                             # Advanced system statistics
+ep monitor docker                            # Docker container resource usage
+ep monitor docker --project myproject        # Filter by project
+ep monitor docker --sort memory              # Sort by memory usage
+ep monitor health                            # Full health check
+ep monitor health --checks disk,memory,ssl  # Specific checks only
+ep monitor health --verbose                  # Include details
+```
+
+---
+
+### docker — Docker cleanup
+
+```bash
+ep docker cleanup        # Remove unused images
+ep docker cleanup -f     # Skip confirmation
+ep docker prune          # Prune builder cache
+ep docker prune --all    # Remove all cache
+```
+
+---
+
+### system — System information
+
+```bash
+ep system ip                   # Server IP addresses
+ep system ip --public-only     # Public IPs only
+ep system domain               # Panel domain
+ep system info                 # Full system information
+ep system restart              # Restart EasyPanel
+ep system restart traefik      # Restart Traefik
+```
+
+---
+
+### status
+
+```bash
+ep status    # Connection status and server info
+```
+
+---
+
+## MCP Server Mode
+
+`ep mcp` starts an MCP (Model Context Protocol) server, making your EasyPanel instance available as a tool in AI IDEs. This mode preserves full backward compatibility with [`easypanel-mcp`](https://github.com/sitp2k/easypanel-mcp) — the binary `easypanel-mcp` maps to `ep mcp` automatically.
+
+```bash
+# Default: stdio transport (for Claude Desktop, Cursor, Windsurf)
+ep mcp
+
+# SSE transport
+ep mcp --transport sse --port 3001
+
+# All transports simultaneously
+ep mcp --transport all --http-port 3001 --rest-api-port 3002
+```
+
+### Claude Desktop (`~/.config/claude/claude_desktop_config.json`)
+
+```json
+{
+  "mcpServers": {
+    "easypanel": {
+      "command": "ep",
+      "args": ["mcp"],
+      "env": {
+        "EASYPANEL_URL": "https://panel.example.com",
+        "EASYPANEL_TOKEN": "your_token"
+      }
+    }
   }
-};
-
-export async function handleMyTool(name: string, args: unknown) {
-  // Implementation
-  return { content: [{ type: 'text', text: 'Result' }] };
 }
 ```
 
+### Cursor / Windsurf
+
+Add an MCP entry pointing to `ep mcp` with `EASYPANEL_URL` and `EASYPANEL_TOKEN` in the environment.
+
 ---
 
-## 🔍 Troubleshooting
+## Configuration
 
-### Connection Issues
+### Config file
 
-**Error**: `Connection refused`
-
-```bash
-# Check if EasyPanel is accessible
-curl http://your-server-ip:3000/api/trpc/auth.getSession
-
-# Verify firewall settings
-sudo ufw status
-sudo ufw allow 3000/tcp
-```
-
-**Error**: `Authentication failed`
-
-1. Verify your EasyPanel credentials
-2. Check if the user has admin permissions
-3. Try logging in via the EasyPanel web UI first
-4. Ensure you're using the correct URL (include http:// or https://)
-
-### Service Not Found
-
-```bash
-# Service names in EasyPanel are lowercase with hyphens
-# Correct: "my-app", "api-service"
-# Incorrect: "MyApp", "API_SERVICE"
-```
-
-### Common Errors
-
-| Error | Solution |
-|-------|----------|
-| `ECONNREFUSED` | Check EasyPanel URL and firewall |
-| `401 Unauthorized` | Verify email/password are correct |
-| `403 Forbidden` | User needs admin permissions |
-| `Service not found` | Check service name format (lowercase-hyphens) |
-| `Domain already exists` | Domain must be unique across all services |
-
-### Debug Mode
-
-Enable debug logging:
-
-```bash
-export DEBUG=easypanel:*
-node dist/index.js
-```
-
-Or in your `.env`:
+Credentials and contexts are stored at:
 
 ```
-DEBUG=easypanel:*
+~/.config/easypanel/config.json
 ```
 
-### Performance Issues
+The file contains an array of named contexts. The active context is used for all commands unless overridden with `--url`/`--token` or environment variables.
 
-1. **Enable caching** (default: on)
-   ```
-   CACHE_ENABLED=true
-   CACHE_TTL=300
-   ```
+### Environment variables
 
-2. **Monitor cache statistics**
-   ```javascript
-   const stats = client.getCacheStats();
-   console.log(`Hit rate: ${stats.hitRate}%`);
-   ```
+| Variable | Description |
+|---|---|
+| `EASYPANEL_URL` | EasyPanel instance URL |
+| `EASYPANEL_TOKEN` | API token |
 
-3. **Adjust timeouts for slow connections**
-   ```javascript
-   const client = new EasyPanelClient({
-     timeout: 30000, // 30 seconds
-     retryAttempts: 3
-   });
-   ```
+### `.env` file (local projects)
+
+You can place a `.env` file in your project directory:
+
+```env
+EASYPANEL_URL=https://panel.example.com
+EASYPANEL_TOKEN=your_api_token
+```
 
 ---
 
-## 🔒 Security Best Practices
+## Credits
 
-1. **Never hardcode credentials in code** - Always use environment variables
-2. **Use a dedicated API user** with minimal required permissions
-3. **Rotate credentials regularly**
-4. **Use HTTPS in production** - `EASYPANEL_URL=https://...`
-5. **Consider using JWT tokens** instead of passwords for long-running sessions
-6. **Audit access logs** in EasyPanel regularly
+- Original MCP server: [sitp2k/easypanel-mcp](https://github.com/sitp2k/easypanel-mcp) — the foundation this CLI was built on
+- [EasyPanel](https://easypanel.io) — the server control panel this CLI targets
+
+This project is not affiliated with, endorsed by, or officially supported by the EasyPanel team.
 
 ---
 
-## 📚 Additional Resources
+## Contributing
 
-- [EasyPanel Documentation](https://easypanel.io/docs?aff=7GNAmD&utm_source=github&utm_medium=readme&utm_campaign=readme-optimization)
-- [EasyPanel Pricing & Plans](https://easypanel.io/pricing?aff=7GNAmD&utm_source=github&utm_medium=readme&utm_campaign=readme-optimization)
-- [Model Context Protocol](https://modelcontextprotocol.io)
-- [Claude Documentation](https://docs.anthropic.com/claude)
-- [MCP Server Development Guide](https://github.com/modelcontextprotocol/servers)
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions, code style, and the PR process.
 
 ---
 
-## 🤝 Contributing
+## License
 
- Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for details.
-
-### Development Workflow
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
----
-
-## 🌟 Don't Forget to Star Us!
-
-⭐ **If this MCP server helps you deploy faster, please give us a star on GitHub!** ⭐
-
-[Star on GitHub](https://github.com/sitp2k/easypanel-mcp)
-
-Every star helps us reach more developers and continue maintaining this project.
-
----
-
-## 💎 Ready to Upgrade to Premium?
-
-You've seen how powerful this MCP server is. Imagine what you can do with:
-
-✅ **Unlimited Projects & Services**
-✅ **Free SSL Certificates for All Domains**
-✅ **Priority Deployments (10x Faster)**
-✅ **Advanced Monitoring & Alerts**
-✅ **Automated Daily Backups**
-✅ **24/7 Priority Support**
-✅ **Advanced Security Features**
-
-### 🔥 **Support This Project - Upgrade Through Our Link**
-
-🎁 **Premium Features + Support Open Source**
-When you upgrade through our link:
-
-[**🚀 Upgrade to Premium & Support Our Development**](https://easypanel.io?aff=7GNAmD&utm_source=github&utm_medium=readme&utm_campaign=readme-optimization)
-
-> 💡 **Why wait?** Most teams see 10x productivity increase after switching to Premium. Upgrade now to support continued development and scale unlimited!
-
----
-
-## 🆘 Support
-
-- 📖 [Documentation](https://github.com/sitp2k/easypanel-mcp/wiki)
-- 🐛 [Issue Tracker](https://github.com/sitp2k/easypanel-mcp/issues)
-- 💬 [Discussions](https://github.com/sitp2k/easypanel-mcp/discussions)
-- 🚀 [EasyPanel Support](https://easypanel.io?aff=7GNAmD&utm_source=github&utm_medium=readme&utm_campaign=readme-optimization) (for hosting questions)
-- 💎 [Premium Support for Premium Users](https://easypanel.io?aff=7GNAmD&utm_source=github&utm_medium=readme&utm_campaign=readme-optimization)
-
----
-
-## 🎉 Acknowledgments
-
-- [EasyPanel](https://easypanel.io?aff=7GNAmD&utm_source=github&utm_medium=readme&utm_campaign=readme-optimization) for providing the amazing hosting platform and sponsoring this project
-- [Anthropic](https://anthropic.com) for creating Claude and the Model Context Protocol
-- All contributors who help make this project better
-- **You**, for supporting open-source development!
-
----
-
-<p align="center">
-  <strong>⭐ Star on GitHub | <a href="https://easypanel.io?aff=7GNAmD&utm_source=github&utm_medium=readme&utm_campaign=readme-optimization">🎯 Upgrade to Premium</a> | ❤️ Support Open Source ⭐</strong>
-</p>
-
----
-
-<p align="center">
-  Made with ❤️ by the MCP EasyPanel Server team<br>
-  <em>Proudly sponsored by <a href="https://easypanel.io?aff=7GNAmD&utm_source=github&utm_medium=readme&utm_campaign=readme-optimization">EasyPanel</a></em>
-</p>
+MIT — see [LICENSE](LICENSE).

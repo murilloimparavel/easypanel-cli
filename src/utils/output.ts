@@ -1,0 +1,129 @@
+/**
+ * CLI Output Utilities
+ * Tables, colors, spinners, confirmations
+ */
+
+import chalk from 'chalk';
+import Table from 'cli-table3';
+import ora, { type Ora } from 'ora';
+import { confirm as inquirerConfirm } from '@inquirer/prompts';
+
+export interface GlobalOptions {
+  json?: boolean;
+  quiet?: boolean;
+  verbose?: boolean;
+  url?: string;
+  token?: string;
+}
+
+export function printJson(data: unknown): void {
+  process.stdout.write(JSON.stringify(data, null, 2) + '\n');
+}
+
+export function printSuccess(message: string, opts?: GlobalOptions): void {
+  if (opts?.quiet) return;
+  if (opts?.json) return;
+  console.log(chalk.green('✓') + ' ' + message);
+}
+
+export function printError(message: string, opts?: GlobalOptions): void {
+  if (opts?.json) {
+    process.stderr.write(JSON.stringify({ error: true, message }) + '\n');
+    return;
+  }
+  console.error(chalk.red('✗') + ' ' + message);
+}
+
+export function printWarning(message: string, opts?: GlobalOptions): void {
+  if (opts?.quiet) return;
+  if (opts?.json) return;
+  console.log(chalk.yellow('⚠') + ' ' + message);
+}
+
+export function printInfo(message: string, opts?: GlobalOptions): void {
+  if (opts?.quiet) return;
+  if (opts?.json) return;
+  console.log(chalk.cyan('ℹ') + ' ' + message);
+}
+
+export function printTable(headers: string[], rows: (string | number)[][], opts?: GlobalOptions): void {
+  if (opts?.json) return;
+  if (opts?.quiet) return;
+
+  const table = new Table({
+    head: headers.map(h => chalk.bold.cyan(h)),
+    style: { head: [], border: ['gray'] },
+  });
+
+  rows.forEach(row => table.push(row.map(String)));
+  console.log(table.toString());
+}
+
+export function spinner(message: string): Ora {
+  return ora({ text: message, color: 'cyan' }).start();
+}
+
+export async function confirm(message: string, defaultValue = false): Promise<boolean> {
+  if (!process.stdin.isTTY) return defaultValue;
+  return inquirerConfirm({ message, default: defaultValue });
+}
+
+export function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+export function formatUptime(seconds: number): string {
+  const d = Math.floor(seconds / 86400);
+  const h = Math.floor((seconds % 86400) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
+export function statusColor(status: string): string {
+  const s = status.toLowerCase();
+  if (['running', 'active', 'healthy', 'success', 'enabled'].includes(s)) return chalk.green(status);
+  if (['stopped', 'inactive', 'failed', 'error', 'disabled'].includes(s)) return chalk.red(status);
+  if (['pending', 'building', 'restarting', 'warning'].includes(s)) return chalk.yellow(status);
+  return chalk.gray(status);
+}
+
+export function handleCliError(error: unknown, opts?: GlobalOptions): void {
+  if (opts?.json) {
+    const message = error instanceof Error ? error.message : String(error);
+    process.stderr.write(JSON.stringify({ error: true, message }) + '\n');
+    process.exit(1);
+  }
+
+  if (error instanceof Error) {
+    // Check for EasyPanelError shape
+    const epError = error as any;
+    if (epError.category === 'AUTHENTICATION') {
+      printError(error.message);
+      console.error(chalk.yellow('\nRun `ep login` to configure credentials'));
+      process.exit(1);
+    }
+    if (epError.suggestions?.length > 0) {
+      printError(error.message);
+      console.error(chalk.dim('\nSuggestions:'));
+      epError.suggestions.slice(0, 3).forEach((s: string) => console.error(chalk.dim('  -'), s));
+      process.exit(1);
+    }
+    printError(error.message);
+  } else {
+    printError(String(error));
+  }
+  process.exit(1);
+}
+
+export function requireAuth(): void {
+  if (!process.env.EASYPANEL_URL || !(process.env.EASYPANEL_TOKEN || process.env.EASYPANEL_PASSWORD)) {
+    printError('Not configured. Run `ep login` first or set EASYPANEL_URL and EASYPANEL_TOKEN env vars.');
+    process.exit(1);
+  }
+}

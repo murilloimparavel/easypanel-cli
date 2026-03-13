@@ -1,10 +1,12 @@
 {
-  "name": "easypanel-mcp",
-  "version": "1.0.4",
-  "description": "Multi-client MCP Server for EasyPanel - supports Claude, Cursor, Windsurf, Kiro, and Web IDEs",
+  "name": "easypanel-cli",
+  "version": "0.1.0",
+  "description": "Unofficial CLI for EasyPanel - manage projects, services, deployments, domains and more from the terminal",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
+    "ep": "./dist/index.js",
+    "easypanel": "./dist/index.js",
     "easypanel-mcp": "./dist/index.js"
   },
   "files": [
@@ -19,50 +21,40 @@
     "watch": "tsc --watch",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
-    "prepare": "npm run build",
-    "test": "node test-install.sh",
-    "install:setup": "./install.sh",
-    "install:local": "npm install && npm run build",
-    "install:global": "npm install -g .",
-    "postinstall": "echo '✅ MCP EasyPanel Server installed successfully! Run \"npm run test\" to verify.'",
-    "example:env": "cp .env.example .env && echo '✅ .env file created from example. Please update with your credentials.'"
+    "prepare": "npm run build"
   },
   "keywords": [
-    "mcp",
     "easypanel",
-    "model-context-protocol",
-    "claude",
-    "cursor",
-    "windsurf",
-    "kiro",
-    "ai-ide",
-    "multi-client",
+    "cli",
     "hosting",
     "deployment",
     "server-management",
     "docker",
     "containers",
     "devops",
-    "api",
-    "rest-api",
-    "sse",
-    "stdio",
-    "cross-platform"
+    "mcp",
+    "model-context-protocol"
   ],
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@inquirer/prompts": "^8.3.0",
     "@modelcontextprotocol/sdk": "^1.0.0",
     "axios": "^1.7.0",
+    "chalk": "^5.6.2",
+    "cli-table3": "^0.6.5",
     "commander": "^14.0.2",
     "cors": "^2.8.5",
     "express": "^5.2.1",
+    "ora": "^9.3.0",
+    "ws": "^8.19.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^20.0.0",
+    "@types/ws": "^8.18.1",
     "tsx": "^4.0.0",
     "typescript": "^5.0.0"
   },
