@@ -75,6 +75,13 @@ export function registerMonitorCommand(program: Command): void {
         if (cmdOpts.project) containers = containers.filter((c: any) => c.project === cmdOpts.project);
         if (cmdOpts.service) containers = containers.filter((c: any) => c.service === cmdOpts.service);
 
+        const sortField = cmdOpts.sort || 'cpu';
+        containers = [...containers].sort((a: any, b: any) => {
+          if (sortField === 'memory') return (b.memory ?? 0) - (a.memory ?? 0);
+          if (sortField === 'name') return (a.name || a.service || '').localeCompare(b.name || b.service || '');
+          return (b.cpu ?? 0) - (a.cpu ?? 0); // default: cpu
+        });
+
         if (!containers.length) { console.log(chalk.dim('No containers found.')); return; }
 
         printTable(

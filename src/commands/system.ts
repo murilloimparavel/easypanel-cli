@@ -85,17 +85,19 @@ export function registerSystemCommand(program: Command): void {
         process.exit(1);
       }
 
-      try {
-        if (!cmdOpts.force) {
+      if (!cmdOpts.force) {
+        try {
           const yes = await confirm(`Restart ${target}?`);
           if (!yes) return;
-        }
+        } catch { return; }
+      }
 
-        const client = getClient();
-        const s = spinner(`Restarting ${target}...`);
+      const client = getClient();
+      const s = spinner(`Restarting ${target}...`);
+      try {
         if (target === 'easypanel') await client.restartEasyPanelService();
         else await client.restartTraefikService();
         s.succeed(`${target} restarted`);
-      } catch (err) { handleCliError(err, opts); }
+      } catch (err) { s.fail(`Failed to restart ${target}`); handleCliError(err, opts); }
     });
 }

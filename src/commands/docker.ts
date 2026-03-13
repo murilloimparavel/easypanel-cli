@@ -21,18 +21,21 @@ export function registerDockerCommand(program: Command): void {
       loadConfig(opts.url, opts.token);
       requireAuth();
 
-      try {
-        if (!cmdOpts.force) {
+      if (!cmdOpts.force) {
+        try {
           const yes = await confirm('Remove unused Docker images?', true);
           if (!yes) return;
-        }
-        const client = getClient();
-        const s = spinner('Cleaning up images...');
+        } catch { return; }
+      }
+
+      const client = getClient();
+      const s = spinner('Cleaning up images...');
+      try {
         const result = await client.dockerImageCleanup(cmdOpts.force) as any;
         const freed = result?.freed_space || result?.data?.freed_space;
         s.succeed(`Cleanup complete${freed ? ` — freed ${formatBytes(freed)}` : ''}`);
         if (opts.json) printJson(result);
-      } catch (err) { handleCliError(err, opts); }
+      } catch (err) { s.fail('Failed to clean up images'); handleCliError(err, opts); }
     });
 
   docker
@@ -44,13 +47,13 @@ export function registerDockerCommand(program: Command): void {
       loadConfig(opts.url, opts.token);
       requireAuth();
 
+      const client = getClient();
+      const s = spinner('Pruning builder cache...');
       try {
-        const client = getClient();
-        const s = spinner('Pruning builder cache...');
         const result = await client.dockerBuilderCachePrune(cmdOpts.all) as any;
         const freed = result?.freed_space || result?.data?.freed_space;
         s.succeed(`Cache pruned${freed ? ` — freed ${formatBytes(freed)}` : ''}`);
         if (opts.json) printJson(result);
-      } catch (err) { handleCliError(err, opts); }
+      } catch (err) { s.fail('Failed to prune builder cache'); handleCliError(err, opts); }
     });
 }

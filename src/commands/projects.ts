@@ -52,14 +52,15 @@ export function registerProjectsCommand(program: Command): void {
       loadConfig(opts.url, opts.token);
       requireAuth();
 
+      const s = spinner(`Creating project "${name}"...`);
       try {
         const client = getClient();
-        const s = spinner(`Creating project "${name}"...`);
         const result = await client.createProject(name);
         s.succeed(`Project "${name}" created`);
 
         if (opts.json) { printJson(result); return; }
       } catch (err) {
+        s.fail('Failed to create project');
         handleCliError(err, opts);
       }
     });
@@ -105,20 +106,23 @@ export function registerProjectsCommand(program: Command): void {
       loadConfig(opts.url, opts.token);
       requireAuth();
 
-      try {
-        if (!cmdOpts.force) {
+      if (!cmdOpts.force) {
+        try {
           const yes = await confirm(`Delete project "${name}" and ALL its services? This cannot be undone.`);
           if (!yes) {
             console.log(chalk.dim('Cancelled.'));
             return;
           }
-        }
+        } catch { return; }
+      }
 
-        const client = getClient();
-        const s = spinner(`Destroying project "${name}"...`);
+      const client = getClient();
+      const s = spinner(`Destroying project "${name}"...`);
+      try {
         await client.destroyProject(name);
         s.succeed(`Project "${name}" destroyed`);
       } catch (err) {
+        s.fail('Failed to destroy project');
         handleCliError(err, opts);
       }
     });

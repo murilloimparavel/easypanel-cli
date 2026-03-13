@@ -26,14 +26,14 @@ export function registerDbCommand(program: Command): void {
       loadConfig(opts.url, opts.token);
       requireAuth();
 
+      const s = spinner('Creating Redis instance...');
       try {
         const client = getClient();
-        const s = spinner('Creating Redis instance...');
         const result = await client.createRedis(project, name, cmdOpts.password, cmdOpts.image);
         s.succeed(`Redis "${project}/${name}" created`);
-        console.log(chalk.dim(`  Connection: redis://:${cmdOpts.password}@${project}_${name}:6379`));
+        console.log(chalk.dim(`  Connection: redis://:***@${project}_${name}:6379  (password masked)`));
         if (opts.json) printJson(result);
-      } catch (err) { handleCliError(err, opts); }
+      } catch (err) { s.fail('Failed to create Redis instance'); handleCliError(err, opts); }
     });
 
   redis
@@ -68,14 +68,14 @@ export function registerDbCommand(program: Command): void {
       loadConfig(opts.url, opts.token);
       requireAuth();
 
+      const s = spinner('Creating MySQL instance...');
       try {
         const client = getClient();
-        const s = spinner('Creating MySQL instance...');
         const result = await client.createMySQL(project, name, cmdOpts.db, cmdOpts.user, cmdOpts.password, cmdOpts.rootPassword, cmdOpts.image);
         s.succeed(`MySQL "${project}/${name}" created`);
-        console.log(chalk.dim(`  Connection: mysql://${cmdOpts.user}:${cmdOpts.password}@${project}_${name}:3306/${cmdOpts.db}`));
+        console.log(chalk.dim(`  Connection: mysql://${cmdOpts.user}:***@${project}_${name}:3306/${cmdOpts.db}  (password masked)`));
         if (opts.json) printJson(result);
-      } catch (err) { handleCliError(err, opts); }
+      } catch (err) { s.fail('Failed to create MySQL instance'); handleCliError(err, opts); }
     });
 
   // PostgreSQL
@@ -93,14 +93,14 @@ export function registerDbCommand(program: Command): void {
       loadConfig(opts.url, opts.token);
       requireAuth();
 
+      const s = spinner('Creating PostgreSQL instance...');
       try {
         const client = getClient();
-        const s = spinner('Creating PostgreSQL instance...');
         const result = await client.createPostgres(project, name, cmdOpts.db, cmdOpts.user, cmdOpts.password, cmdOpts.image);
         s.succeed(`PostgreSQL "${project}/${name}" created`);
-        console.log(chalk.dim(`  Connection: postgresql://${cmdOpts.user}:${cmdOpts.password}@${project}_${name}:5432/${cmdOpts.db}`));
+        console.log(chalk.dim(`  Connection: postgresql://${cmdOpts.user}:***@${project}_${name}:5432/${cmdOpts.db}  (password masked)`));
         if (opts.json) printJson(result);
-      } catch (err) { handleCliError(err, opts); }
+      } catch (err) { s.fail('Failed to create PostgreSQL instance'); handleCliError(err, opts); }
     });
 
   // Destroy (generic for all DB types)
@@ -118,16 +118,18 @@ export function registerDbCommand(program: Command): void {
         process.exit(1);
       }
 
-      try {
-        if (!cmdOpts.force) {
+      if (!cmdOpts.force) {
+        try {
           const yes = await confirm(`Delete ${type} "${project}/${name}"? All data will be lost.`);
           if (!yes) { console.log(chalk.dim('Cancelled.')); return; }
-        }
+        } catch { return; }
+      }
 
-        const client = getClient();
-        const s = spinner(`Destroying ${type} "${project}/${name}"...`);
+      const client = getClient();
+      const s = spinner(`Destroying ${type} "${project}/${name}"...`);
+      try {
         await client.destroyDBService(project, name, type as 'redis' | 'mysql' | 'postgres');
         s.succeed(`${type} "${project}/${name}" destroyed`);
-      } catch (err) { handleCliError(err, opts); }
+      } catch (err) { s.fail(`Failed to destroy ${type}`); handleCliError(err, opts); }
     });
 }

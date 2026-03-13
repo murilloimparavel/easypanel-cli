@@ -53,17 +53,17 @@ export function registerDomainsCommand(program: Command): void {
       loadConfig(opts.url, opts.token);
       requireAuth();
 
+      const s = spinner(`Adding domain ${chalk.cyan(domain)}...`);
       try {
         const client = getClient();
-        const s = spinner(`Adding domain ${chalk.cyan(domain)}...`);
         await client.addDomain(project, service, {
           host: domain,
-          port: parseInt(cmdOpts.port),
+          port: parseInt(cmdOpts.port, 10),
           https: cmdOpts.https || false,
           domain,
         });
         s.succeed(`Domain ${domain} added to "${project}/${service}"`);
-      } catch (err) { handleCliError(err, opts); }
+      } catch (err) { s.fail('Failed to add domain'); handleCliError(err, opts); }
     });
 
   domains
@@ -74,12 +74,12 @@ export function registerDomainsCommand(program: Command): void {
       loadConfig(opts.url, opts.token);
       requireAuth();
 
+      const s = spinner('Removing domain...');
       try {
         const client = getClient();
-        const s = spinner('Removing domain...');
         await client.removeDomain(project, service, domainId);
         s.succeed('Domain removed');
-      } catch (err) { handleCliError(err, opts); }
+      } catch (err) { s.fail('Failed to remove domain'); handleCliError(err, opts); }
     });
 
   domains
@@ -112,12 +112,12 @@ export function registerDomainsCommand(program: Command): void {
       loadConfig(opts.url, opts.token);
       requireAuth();
 
+      const s = spinner(`Requesting SSL for ${domain}...`);
       try {
         const client = getClient();
-        const s = spinner(`Requesting SSL for ${domain}...`);
         await client.requestSSLCertificate(project, service, domain, cmdOpts.email);
         s.succeed(`SSL certificate requested for ${domain}`);
-      } catch (err) { handleCliError(err, opts); }
+      } catch (err) { s.fail('Failed to request SSL certificate'); handleCliError(err, opts); }
     });
 
   ssl
@@ -146,11 +146,11 @@ export function registerDomainsCommand(program: Command): void {
       loadConfig(opts.url, opts.token);
       requireAuth();
 
+      const s = spinner(`Renewing SSL for ${domain}...`);
       try {
         const client = getClient();
-        const s = spinner(`Renewing SSL for ${domain}...`);
         await client.renewSSLCertificate(project, service, domain);
         s.succeed(`SSL renewed for ${domain}`);
-      } catch (err) { handleCliError(err, opts); }
+      } catch (err) { s.fail('Failed to renew SSL certificate'); handleCliError(err, opts); }
     });
 }

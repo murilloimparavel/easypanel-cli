@@ -7,7 +7,7 @@ import chalk from 'chalk';
 import { getClient } from '../api/client.js';
 import { loadConfig } from '../utils/config.js';
 import {
-  type GlobalOptions, printJson, printSuccess, printError, printTable,
+  type GlobalOptions, printJson, printError, printTable,
   handleCliError, requireAuth, confirm, spinner, statusColor, formatBytes,
 } from '../utils/output.js';
 
@@ -22,13 +22,14 @@ export function registerServicesCommand(program: Command): void {
       loadConfig(opts.url, opts.token);
       requireAuth();
 
+      const s = spinner(`Creating service "${name}" in project "${project}"...`);
       try {
         const client = getClient();
-        const s = spinner(`Creating service "${name}" in project "${project}"...`);
         const result = await client.createAppService(project, name);
         s.succeed(`Service "${name}" created in project "${project}"`);
         if (opts.json) printJson(result);
       } catch (err) {
+        s.fail('Failed to create service');
         handleCliError(err, opts);
       }
     });
@@ -43,12 +44,15 @@ export function registerServicesCommand(program: Command): void {
         loadConfig(opts.url, opts.token);
         requireAuth();
 
+        const gerund = action === 'stop' ? 'Stopping' : `${action.charAt(0).toUpperCase()}${action.slice(1)}ing`;
+        const past = action === 'stop' ? 'stopped' : `${action}ed`;
+        const s = spinner(`${gerund} "${project}/${name}"...`);
         try {
           const client = getClient();
-          const s = spinner(`${action}ing "${project}/${name}"...`);
           await (client as any)[`${action}Service`](project, name);
-          s.succeed(`Service "${project}/${name}" ${action}ed`);
+          s.succeed(`Service "${project}/${name}" ${past}`);
         } catch (err) {
+          s.fail(`Failed to ${action} service`);
           handleCliError(err, opts);
         }
       });
@@ -62,14 +66,15 @@ export function registerServicesCommand(program: Command): void {
       loadConfig(opts.url, opts.token);
       requireAuth();
 
+      const s = spinner(`Redeploying "${project}/${name}"...`);
       try {
         const client = getClient();
-        const s = spinner(`Redeploying "${project}/${name}"...`);
         const result = await client.deployService(project, name) as any;
         s.succeed(`Deployment triggered for "${project}/${name}"`);
         if (result?.buildId) console.log(chalk.dim(`  Build ID: ${result.buildId}`));
         if (opts.json) printJson(result);
       } catch (err) {
+        s.fail('Failed to redeploy service');
         handleCliError(err, opts);
       }
     });
@@ -83,17 +88,20 @@ export function registerServicesCommand(program: Command): void {
       loadConfig(opts.url, opts.token);
       requireAuth();
 
-      try {
-        if (!cmdOpts.force) {
+      if (!cmdOpts.force) {
+        try {
           const yes = await confirm(`Delete service "${project}/${name}"? This cannot be undone.`);
           if (!yes) { console.log(chalk.dim('Cancelled.')); return; }
-        }
+        } catch { return; }
+      }
 
-        const client = getClient();
-        const s = spinner(`Destroying "${project}/${name}"...`);
+      const client = getClient();
+      const s = spinner(`Destroying "${project}/${name}"...`);
+      try {
         await client.destroyAppService(project, name);
         s.succeed(`Service "${project}/${name}" destroyed`);
       } catch (err) {
+        s.fail('Failed to destroy service');
         handleCliError(err, opts);
       }
     });
@@ -136,13 +144,14 @@ export function registerServicesCommand(program: Command): void {
       loadConfig(opts.url, opts.token);
       requireAuth();
 
+      const s = spinner('Updating environment variables...');
       try {
         const envString = vars.join('\n');
         const client = getClient();
-        const s = spinner('Updating environment variables...');
         await client.updateEnv(project, name, envString);
         s.succeed(`Environment updated for "${project}/${name}"`);
       } catch (err) {
+        s.fail('Failed to update environment variables');
         handleCliError(err, opts);
       }
     });
@@ -160,9 +169,16 @@ export function registerServicesCommand(program: Command): void {
       loadConfig(opts.url, opts.token);
       requireAuth();
 
+      const hasOption = cmdOpts.memLimit !== undefined || cmdOpts.memReservation !== undefined
+        || cmdOpts.cpuLimit !== undefined || cmdOpts.cpuReservation !== undefined;
+      if (!hasOption) {
+        console.error(chalk.red('At least one resource option must be specified (--mem-limit, --mem-reservation, --cpu-limit, --cpu-reservation).'));
+        process.exit(1);
+      }
+
+      const s = spinner('Updating resources...');
       try {
         const client = getClient();
-        const s = spinner('Updating resources...');
         await client.updateResources(
           project, name,
           cmdOpts.memReservation, cmdOpts.memLimit,
@@ -170,6 +186,7 @@ export function registerServicesCommand(program: Command): void {
         );
         s.succeed(`Resources updated for "${project}/${name}"`);
       } catch (err) {
+        s.fail('Failed to update resources');
         handleCliError(err, opts);
       }
     });
@@ -193,7 +210,7 @@ export function registerServicesCommand(program: Command): void {
           // WebSocket streaming
           const wsUrl = client.getLogStreamUrlWithOptions(project, name, {
             follow: true,
-            lines: parseInt(cmdOpts.lines),
+            lines: parseInt(cmdOpts.lines, 10),
           });
           if (opts.json) { printJson({ websocketUrl: wsUrl }); return; }
 
@@ -217,7 +234,7 @@ export function registerServicesCommand(program: Command): void {
         }
 
         // Regular log fetch
-        const logOpts: any = { lines: parseInt(cmdOpts.lines) };
+        const logOpts: any = { lines: parseInt(cmdOpts.lines, 10) };
         if (cmdOpts.search) {
           const result = await client.searchLogs(project, name, cmdOpts.search, logOpts) as any;
           if (opts.json) { printJson(result); return; }

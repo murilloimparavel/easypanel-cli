@@ -69,14 +69,16 @@ export async function confirm(message: string, defaultValue = false): Promise<bo
 }
 
 export function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B';
+  if (!bytes || bytes <= 0 || !isFinite(bytes)) return '0 B';
   const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(k)), sizes.length - 1);
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
 export function formatUptime(seconds: number): string {
+  if (seconds < 0 || !isFinite(seconds)) return '—';
+  if (seconds < 60) return `${Math.floor(seconds)}s`;
   const d = Math.floor(seconds / 86400);
   const h = Math.floor((seconds % 86400) / 3600);
   const m = Math.floor((seconds % 3600) / 60);
@@ -121,9 +123,9 @@ export function handleCliError(error: unknown, opts?: GlobalOptions): void {
   process.exit(1);
 }
 
-export function requireAuth(): void {
+export function requireAuth(opts?: GlobalOptions): void {
   if (!process.env.EASYPANEL_URL || !(process.env.EASYPANEL_TOKEN || process.env.EASYPANEL_PASSWORD)) {
-    printError('Not configured. Run `ep login` first or set EASYPANEL_URL and EASYPANEL_TOKEN env vars.');
+    printError('Not configured. Run `ep login` first or set EASYPANEL_URL and EASYPANEL_TOKEN env vars.', opts);
     process.exit(1);
   }
 }

@@ -7,7 +7,7 @@ import chalk from 'chalk';
 import { getClient } from '../api/client.js';
 import { loadConfig } from '../utils/config.js';
 import {
-  type GlobalOptions, printJson, printSuccess, handleCliError, requireAuth, spinner, statusColor,
+  type GlobalOptions, printJson, handleCliError, requireAuth, spinner,
 } from '../utils/output.js';
 
 async function waitForDeployment(client: any, project: string, service: string, opts: GlobalOptions): Promise<void> {

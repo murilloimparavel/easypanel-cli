@@ -58,13 +58,18 @@ program
     if (opts.verbose || program.opts().verbose) process.env.DEBUG = 'true';
     if (opts.client) process.env.MCP_CLIENT = opts.client.toLowerCase();
 
+    if (opts.listClients) {
+      console.log('Supported clients: Claude, Cursor, Windsurf, Kiro, Web IDE, Generic');
+      process.exit(0);
+    }
+
     const { EasyPanelMCPServer } = await import('./mcp/server.js');
     const server = new EasyPanelMCPServer();
 
     const transport = opts.transport as 'stdio' | 'sse' | 'rest' | 'all';
-    const port = parseInt(opts.port) || 3001;
-    const httpPort = parseInt(opts.httpPort) || 3001;
-    const restPort = parseInt(opts.restPort || opts.restApiPort) || 3002;
+    const port = parseInt(opts.port, 10) || 3001;
+    const httpPort = parseInt(opts.httpPort, 10) || 3001;
+    const restPort = parseInt(opts.restPort || opts.restApiPort, 10) || 3002;
 
     console.error(`[MCP] Starting EasyPanel MCP Server with ${transport} transport`);
     await server.run(transport, port, httpPort, restPort);
@@ -72,7 +77,9 @@ program
 
 // Handle invocation as `easypanel-mcp` (backward compat binary name)
 const binName = process.argv[1]?.split('/').pop() || '';
-if (binName === 'easypanel-mcp' && !process.argv.slice(2).some(a => ['mcp', 'login', 'logout', 'whoami', 'status', 'projects', 'services', 'deploy', 'db', 'domains', 'monitor', 'docker', 'system', 'context'].includes(a))) {
+const firstPositional = process.argv.slice(2).find(a => !a.startsWith('-'));
+const cliCommands = ['mcp', 'login', 'logout', 'whoami', 'status', 'projects', 'services', 'deploy', 'db', 'domains', 'monitor', 'docker', 'system', 'context'];
+if (binName === 'easypanel-mcp' && !cliCommands.includes(firstPositional ?? '')) {
   // If called as easypanel-mcp without a known CLI subcommand, auto-inject 'mcp'
   process.argv.splice(2, 0, 'mcp');
 }

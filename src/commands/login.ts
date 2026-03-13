@@ -32,7 +32,7 @@ export function registerLoginCommand(program: Command): void {
             ...config,
             contexts: config.contexts.map(c => ({
               ...c,
-              token: c.token.slice(0, 4) + '...' + c.token.slice(-4),
+              token: c.token.length < 8 ? '***' : c.token.slice(0, 4) + '...' + c.token.slice(-4),
             })),
           };
           printJson(safe);
