@@ -65,7 +65,7 @@ npx easypanel-cli projects list
 ### From source
 
 ```bash
-git clone https://github.com/YOUR_ORG/easypanel-cli.git
+git clone https://github.com/murilloimparavel/easypanel-cli.git
 cd easypanel-cli
 npm install
 npm run build

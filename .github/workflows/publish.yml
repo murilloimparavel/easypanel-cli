@@ -2,8 +2,8 @@ name: Publish to NPM
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*'
   workflow_dispatch:
     inputs:
       version:
@@ -29,6 +29,9 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Verify build
+        run: node dist/index.js --version
 
       - name: Publish to NPM
         run: npm publish --access public

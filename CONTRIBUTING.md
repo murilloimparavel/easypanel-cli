@@ -15,7 +15,7 @@ Thank you for your interest in contributing. This document covers how to set up 
 ### Setup
 
 ```bash
-git clone https://github.com/YOUR_ORG/easypanel-cli.git
+git clone https://github.com/murilloimparavel/easypanel-cli.git
 cd easypanel-cli
 npm install
 ```
@@ -123,10 +123,10 @@ export function registerMyCommand(program: Command): void {
 
 ## Pull request process
 
-1. Fork the repository and create a branch from `main`.
+1. Fork the repository and create a branch from `master`.
 2. Make your changes. If you are adding a command, include at least a brief manual test in the PR description.
 3. Run `npm run build` to confirm there are no TypeScript errors.
-4. Open a pull request against `main` with a clear title and description of what changed and why.
+4. Open a pull request against `master` with a clear title and description of what changed and why.
 5. Address any review feedback.
 
 ---
