@@ -67,6 +67,11 @@ export function registerLoginCommand(program: Command): void {
         // Normalize URL
         url = url.replace(/\/+$/, '');
 
+        if (url.startsWith('http://') && !url.includes('localhost') && !url.includes('127.0.0.1')) {
+          console.error(chalk.yellow('⚠ WARNING: Connecting over HTTP. Tokens and credentials will be sent in cleartext.'));
+          console.error(chalk.yellow('  Consider using HTTPS for production servers.'));
+        }
+
         if (token) {
           // Direct token auth — verify it works
           const s = spinner('Verifying token...');

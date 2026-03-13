@@ -14,6 +14,22 @@ import {
 export function registerServicesCommand(program: Command): void {
   const services = program.command('services').description('Manage app services');
 
+  services.addHelpText('after', `
+Examples:
+  $ ep services create my-project my-service
+  $ ep services start my-project my-service
+  $ ep services stop my-project my-service
+  $ ep services restart my-project my-service
+  $ ep services redeploy my-project my-service
+  $ ep services logs my-project my-service --follow --lines 50
+  $ ep services logs my-project my-service --search "error"
+  $ ep services stats my-project my-service
+  $ ep services env get my-project my-service
+  $ ep services env set my-project my-service DB_HOST=localhost DB_PORT=5432
+  $ ep services resources my-project my-service --mem-limit 512 --cpu-limit 1
+  $ ep services build-status my-project my-service
+`);
+
   services
     .command('create <project> <name>')
     .description('Create a new app service')
@@ -111,7 +127,7 @@ export function registerServicesCommand(program: Command): void {
 
   env
     .command('get <project> <name>')
-    .description('Show environment variables')
+    .description('Show environment variables (may contain secrets)')
     .action(async (project, name, _, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);

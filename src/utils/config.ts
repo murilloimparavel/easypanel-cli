@@ -6,6 +6,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from 'fs';
 import { homedir } from 'os';
 import { join } from 'path';
+import chalk from 'chalk';
 
 export interface EpContext {
   name: string;
@@ -23,7 +24,7 @@ const CONFIG_FILE = join(CONFIG_DIR, 'config.json');
 
 function ensureConfigDir(): void {
   if (!existsSync(CONFIG_DIR)) {
-    mkdirSync(CONFIG_DIR, { recursive: true });
+    mkdirSync(CONFIG_DIR, { recursive: true, mode: 0o700 });
   }
 }
 
@@ -118,6 +119,11 @@ export function loadConfig(urlOverride?: string, tokenOverride?: string): void {
   if (ctx) {
     if (!process.env.EASYPANEL_URL) process.env.EASYPANEL_URL = ctx.url;
     if (!process.env.EASYPANEL_TOKEN) process.env.EASYPANEL_TOKEN = ctx.token;
+  }
+
+  const url = process.env.EASYPANEL_URL;
+  if (url && url.startsWith('http://') && !url.includes('localhost') && !url.includes('127.0.0.1')) {
+    console.error(chalk.yellow('⚠ WARNING: Connecting over HTTP. Credentials sent in cleartext.'));
   }
 }
 

@@ -123,6 +123,45 @@ export function handleCliError(error: unknown, opts?: GlobalOptions): void {
   process.exit(1);
 }
 
+export function formatDate(dateStr: string | undefined): string {
+  if (!dateStr) return '—';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr;
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric', month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+}
+
+export function timeAgo(dateStr: string | undefined): string {
+  if (!dateStr) return '—';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr;
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (seconds < 0) return 'just now';
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months}mo ago`;
+  return `${Math.floor(months / 12)}y ago`;
+}
+
+export function parseProjectService(projectOrSlash: string, service?: string): { project: string; service: string } {
+  if (projectOrSlash.includes('/')) {
+    const [proj, svc] = projectOrSlash.split('/', 2);
+    return { project: proj, service: svc };
+  }
+  if (!service) {
+    throw new Error('Service name required. Use "project/service" or provide both arguments.');
+  }
+  return { project: projectOrSlash, service };
+}
+
 export function requireAuth(opts?: GlobalOptions): void {
   if (!process.env.EASYPANEL_URL || !(process.env.EASYPANEL_TOKEN || process.env.EASYPANEL_PASSWORD)) {
     printError('Not configured. Run `ep login` first or set EASYPANEL_URL and EASYPANEL_TOKEN env vars.', opts);
