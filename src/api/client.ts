@@ -721,9 +721,11 @@ export class EasyPanelClient {
   }
 
   /**
-   * Ensure we have a valid token before making requests
+   * Ensure we have a valid token before making requests.
+   * Calls ensureInitialized() first to load credentials from process.env.
    */
   async ensureAuthenticated(): Promise<void> {
+    this.ensureInitialized();
     if (!this.token) {
       await this.authenticate();
     }
