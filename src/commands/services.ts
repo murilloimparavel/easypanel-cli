@@ -234,13 +234,16 @@ Examples:
           const { default: WebSocket } = await import('ws');
           const ws = new WebSocket(wsUrl as any);
           ws.on('message', (data: Buffer) => {
+            const raw = data.toString();
             try {
-              const log = JSON.parse(data.toString());
-              const ts = log.timestamp ? chalk.dim(new Date(log.timestamp).toISOString().slice(11, 19)) : '';
-              const level = log.level ? statusColor(log.level) : '';
-              process.stdout.write(`${ts} ${level} ${log.message || data.toString()}\n`);
+              // EasyPanel sends JSON frames: { output: "log line\r\n" }
+              const frame = JSON.parse(raw);
+              const output: string = frame.output ?? frame.message ?? raw;
+              // Strip ANSI escape codes for clean terminal output
+              const clean = output.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '');
+              process.stdout.write(clean);
             } catch {
-              process.stdout.write(data.toString() + '\n');
+              process.stdout.write(raw);
             }
           });
           ws.on('error', (err: Error) => printError(`WebSocket error: ${err.message}`));

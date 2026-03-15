@@ -55,21 +55,46 @@ export interface PostgresService {
 }
 
 export interface Domain {
+  id: string;
   host: string;
-  id?: string;
-  https?: boolean;
-  port?: number;
+  https: boolean;
+  port: number;
+  path: string;
+  middlewares: string[];
+  certificateResolver: string;
+  wildcard: boolean;
+  internalProtocol: string;
+  destinationType: string;
+  serviceDestination?: {
+    projectName: string;
+    serviceName: string;
+    protocol: string;
+    port: number;
+  };
+  customDestination?: {
+    url: string;
+  };
   sslCertificate?: SLCertificate;
   createdAt?: string;
 }
 
 export interface DomainConfiguration {
+  id?: string;
   host: string;
   port: number;
   https: boolean;
-  sslCertificate?: SLCertificate;
-  customHeaders?: Record<string, string>;
   path?: string;
+  middlewares?: string[];
+  certificateResolver?: string;
+  wildcard?: boolean;
+  internalProtocol?: string;
+  destinationType?: string;
+  serviceDestination?: {
+    projectName: string;
+    serviceName: string;
+    protocol: string;
+    port: number;
+  };
   domain?: string;
   sslEmail?: string;
 }

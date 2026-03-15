@@ -65,6 +65,10 @@ command
   });
 ```
 
+### Lazy Initialization (EasyPanelClient)
+
+`EasyPanelClient` uses lazy initialization. The constructor is empty — credentials (`EASYPANEL_URL`, `EASYPANEL_TOKEN`) are loaded from `process.env` only on first API use via `ensureInitialized()`. This allows instantiating the client without env vars (e.g., during module imports).
+
 ### Config resolution order
 ```
 CLI flags (--url, --token)
@@ -76,7 +80,8 @@ CLI flags (--url, --token)
 ```
 Queries:  GET /api/trpc/procedure.name?input={"json":...}
 Mutations: POST /api/trpc/procedure.name  body: {"json":...}
-Auth: Authorization: Bearer <token>
+Auth: Authorization: Bearer <token>  (required for domain procedures)
+      x-api-token: <token>           (service/project procedures accept both)
 ```
 
 ## Binaries
@@ -86,6 +91,15 @@ Auth: Authorization: Bearer <token>
   "easypanel": "./dist/index.js",
   "easypanel-mcp": "./dist/index.js"
 }
+```
+
+## CLI Installation
+```bash
+# Global link (recommended for development)
+sudo npm link /srv/projetos/easypanel-cli
+
+# Verify
+which ep && ep --version
 ```
 
 ## Critical files (DO NOT MODIFY)

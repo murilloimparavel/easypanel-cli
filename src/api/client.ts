@@ -1041,9 +1041,9 @@ export class EasyPanelClient {
       'monitor.getSystemStats',
       'monitor.getDockerTaskStats',
       'monitor.getMonitorTableData',
-      'services.app.listDomains',
-      'services.app.validateDomain',
-      'services.app.getSSLCertificate',
+      'domains.listDomains',
+      'domains.validateDomain',
+      'domains.getSSLCertificate',
       'services.app.getBuildStatus',
       'auth.getUser',
       'license.getPayload',
@@ -1115,7 +1115,7 @@ export class EasyPanelClient {
       service: [
         'monitor.getServiceStats',
         'services.redis.inspectService',
-        'services.app.listDomains',
+        'domains.listDomains',
         'services.app.getBuildStatus'
       ]
     },
@@ -1182,45 +1182,45 @@ export class EasyPanelClient {
     },
 
     // Domain operations
-    'services.app.addDomain': {
+    'domains.createDomain': {
       global: [
-        'services.app.listDomains',
-        'services.app.validateDomain'
+        'domains.listDomains',
+        'domains.validateDomain'
       ],
       service: [
-        'services.app.listDomains',
-        'services.app.getSSLCertificate'
+        'domains.listDomains',
+        'domains.getSSLCertificate'
       ],
       projectWide: true
     },
-    'services.app.removeDomain': {
+    'domains.deleteDomain': {
       global: [
-        'services.app.listDomains',
-        'services.app.getSSLCertificate'
+        'domains.listDomains',
+        'domains.getSSLCertificate'
       ],
       service: [
-        'services.app.listDomains',
-        'services.app.getSSLCertificate'
+        'domains.listDomains',
+        'domains.getSSLCertificate'
       ],
       projectWide: true
     },
-    'services.app.requestSSLCertificate': {
+    'domains.requestSSLCertificate': {
       global: [
-        'services.app.getSSLCertificate',
-        'services.app.validateDomain'
+        'domains.getSSLCertificate',
+        'domains.validateDomain'
       ],
       service: [
-        'services.app.getSSLCertificate',
-        'services.app.listDomains'
+        'domains.getSSLCertificate',
+        'domains.listDomains'
       ]
     },
-    'services.app.renewSSLCertificate': {
+    'domains.renewSSLCertificate': {
       global: [
-        'services.app.getSSLCertificate'
+        'domains.getSSLCertificate'
       ],
       service: [
-        'services.app.getSSLCertificate',
-        'services.app.listDomains'
+        'domains.getSSLCertificate',
+        'domains.listDomains'
       ]
     },
 
@@ -1320,7 +1320,7 @@ export class EasyPanelClient {
       this.cache.forEach((_, key) => {
         if (key.startsWith(`monitor.getServiceStats:${projectName}:`) ||
             key.startsWith(`services.redis.inspectService:${projectName}:`) ||
-            key.startsWith(`services.app.listDomains:${projectName}:`) ||
+            key.startsWith(`domains.listDomains:${projectName}:`) ||
             key.startsWith(`services.app.getBuildStatus:${projectName}:`)) {
           this.cache.delete(key);
         }
@@ -1833,55 +1833,172 @@ export class EasyPanelClient {
   }
 
   /**
-   * Get service logs - FIXED using documented WebSocket endpoint
+   * Get service logs by connecting to the EasyPanel WebSocket endpoint,
+   * collecting log output, and returning parsed log lines.
+   *
+   * EasyPanel streams logs via ws://{host}/ws/serviceLogs with JSON frames
+   * of the form { output: "log line text\r\n" }.
    */
   async getServiceLogs(projectName: string, serviceName: string, options?: LogOptions): Promise<LogStreamResponse> {
-    // Use the documented WebSocket endpoint for real-time logs
-    // Since WebSocket requires real-time connection, we'll provide the URL and a WebSocket-ready response
     await this.ensureAuthenticated();
 
-    // Construct the WebSocket URL based on EasyPanel documentation
+    const maxLines = options?.lines ?? 100;
     const wsUrl = this.getLogStreamUrlWithOptions(projectName, serviceName, options);
 
-    // Check if we can provide recent logs via fallback method
-    try {
-      // First try to get service status to provide helpful context
-      const service = await this.query('projects.inspectProject', { projectName });
-      const serviceInfo = (service as any)?.services?.find((s: any) => s.name === serviceName);
+    const serviceId = `${projectName}_${serviceName}`;
+    const logs = await this.collectLogsFromWebSocket(wsUrl, maxLines, serviceId);
 
-      // Return WebSocket URL and service context for client-side connection
-      return {
-        websocketUrl: wsUrl,
-        service: {
-          name: serviceName,
-          projectName: projectName,
-          status: serviceInfo?.status || 'unknown',
-          containerName: serviceInfo?.containerName || `${projectName}_${serviceName}`,
-        },
-        message: 'Use the provided WebSocket URL to stream real-time logs. This requires a WebSocket client connection.',
-        logs: [], // No historical logs available via this method
-        hasMore: true, // Real-time stream can have more
-        totalMatches: 0,
-        query: '',
-        instructions: {
-          connectWebSocket: wsUrl,
-          format: 'Raw log lines with timestamps',
-          example: 'Use ws.connect("' + wsUrl + '") in your WebSocket client',
+    return {
+      service: serviceId,
+      logs,
+      hasMore: logs.length >= maxLines,
+      websocketUrl: wsUrl,
+    };
+  }
+
+  /**
+   * Connect to an EasyPanel WebSocket log endpoint, collect up to `maxLines`
+   * log entries, then close and return them.
+   *
+   * The server sends JSON frames: { output: "...text...\r\n" }
+   * It also sends an initial batch of historical lines followed by a continuous
+   * stream.  We wait for a brief idle period after receiving the initial burst
+   * before closing the connection so we capture the full history without
+   * hanging forever.
+   */
+  private async collectLogsFromWebSocket(wsUrl: string, maxLines: number, serviceId?: string): Promise<ContainerLog[]> {
+    const { default: WebSocket } = await import('ws');
+
+    return new Promise<ContainerLog[]>((resolve, reject) => {
+      const logs: ContainerLog[] = [];
+      let idleTimer: ReturnType<typeof setTimeout> | null = null;
+      // After receiving the first message, wait this long with no new messages
+      // before assuming the historical burst is done.
+      const IDLE_TIMEOUT_MS = 1500;
+      // Hard timeout to avoid hanging indefinitely.
+      const HARD_TIMEOUT_MS = 10_000;
+      let settled = false;
+
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        if (idleTimer) clearTimeout(idleTimer);
+        try { ws.close(); } catch { /* ignore */ }
+        resolve(logs);
+      };
+
+      const hardTimeout = setTimeout(() => {
+        debugLog('[logs] hard timeout reached, returning collected logs');
+        finish();
+      }, HARD_TIMEOUT_MS);
+
+      const ws = new WebSocket(wsUrl);
+
+      ws.on('open', () => {
+        debugLog('[logs] WebSocket connected to', wsUrl.replace(/token=[^&]+/, 'token=***'));
+      });
+
+      ws.on('message', (data: Buffer | string) => {
+        // Reset idle timer on every message
+        if (idleTimer) clearTimeout(idleTimer);
+
+        const raw = data.toString();
+        try {
+          const frame = JSON.parse(raw);
+          const output: string = frame.output ?? frame.message ?? raw;
+
+          // The output may contain multiple lines separated by \r\n or \n
+          const lines = output.split(/\r?\n/).filter((l: string) => l.length > 0);
+
+          for (const line of lines) {
+            if (logs.length >= maxLines) {
+              finish();
+              return;
+            }
+
+            // Strip ANSI escape codes for cleaner output
+            const clean = line.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '').trim();
+            if (!clean) continue;
+
+            logs.push(this.parseLogLine(clean, serviceId));
+          }
+        } catch {
+          // Non-JSON message — treat as raw log line
+          const clean = raw.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '').trim();
+          if (clean && logs.length < maxLines) {
+            logs.push({
+              timestamp: new Date().toISOString(),
+              level: 'info',
+              message: clean,
+              stream: 'stdout',
+            });
+          }
         }
-      };
-    } catch (error) {
-      // Fallback response with just the WebSocket URL
-      return {
-        websocketUrl: wsUrl,
-        service: { name: serviceName, projectName: projectName },
-        message: 'Service info unavailable, but WebSocket URL provided for real-time logs',
-        logs: [],
-        hasMore: true,
-        totalMatches: 0,
-        query: '',
-        error: error instanceof Error ? error.message : String(error)
-      };
+
+        if (logs.length >= maxLines) {
+          finish();
+          return;
+        }
+
+        // Restart idle timer — if no new messages arrive within IDLE_TIMEOUT_MS
+        // we assume the historical batch is complete.
+        idleTimer = setTimeout(() => {
+          debugLog(`[logs] idle timeout after ${logs.length} lines`);
+          finish();
+        }, IDLE_TIMEOUT_MS);
+      });
+
+      ws.on('error', (err: Error) => {
+        clearTimeout(hardTimeout);
+        if (idleTimer) clearTimeout(idleTimer);
+        if (!settled) {
+          settled = true;
+          // If we already have some logs, return them despite the error
+          if (logs.length > 0) {
+            resolve(logs);
+          } else {
+            reject(new Error(`WebSocket log stream error: ${err.message}`));
+          }
+        }
+      });
+
+      ws.on('close', () => {
+        clearTimeout(hardTimeout);
+        finish();
+      });
+    });
+  }
+
+  /**
+   * Parse a single raw log line into a ContainerLog object.
+   * Attempts to detect timestamp and level from common log formats.
+   */
+  private parseLogLine(line: string, service?: string): ContainerLog {
+    // Try to extract ISO timestamp at the beginning
+    const tsMatch = line.match(/^(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}[.\d]*Z?)\s*(.*)/);
+    let timestamp = new Date().toISOString();
+    let message = line;
+
+    if (tsMatch) {
+      timestamp = new Date(tsMatch[1]).toISOString();
+      message = tsMatch[2];
     }
+
+    // Detect level from common patterns
+    let level: ContainerLog['level'] = 'info';
+    const levelMatch = message.match(/\b(DEBUG|INFO|WARN(?:ING)?|ERROR|FATAL|CRITICAL)\b/i);
+    if (levelMatch) {
+      const raw = levelMatch[1].toUpperCase();
+      if (raw === 'DEBUG') level = 'debug';
+      else if (raw === 'WARN' || raw === 'WARNING') level = 'warn';
+      else if (raw === 'ERROR' || raw === 'CRITICAL') level = 'error';
+      else if (raw === 'FATAL') level = 'fatal';
+    }
+
+    // Detect stderr-like patterns
+    const stream: ContainerLog['stream'] = (level === 'error' || level === 'fatal' || level === 'warn') ? 'stderr' : 'stdout';
+
+    return { timestamp, level, message, service, stream };
   }
 
   /**
@@ -2075,7 +2192,7 @@ export class EasyPanelClient {
   }
 
   /**
-   * Add a domain to a service - FIXED using Folkz1 working approach
+   * Add a domain to a service via domains.createDomain tRPC procedure
    */
   async addDomain(
     projectName: string,
@@ -2086,48 +2203,46 @@ export class EasyPanelClient {
     validateProjectServiceName(projectName, 'project');
     validateProjectServiceName(serviceName, 'service');
 
-    // Use simple domain format that works - match Folkz1 implementation
     const domainName = domainConfig.domain || domainConfig.host;
     if (!domainName) {
       throw new Error('Domain name is required');
     }
     validateDomain(domainName);
 
-    // Use correct EasyPanel API endpoint with simple domain format
-    return this.mutate('services.app.updateDomains', {
-      projectName,
-      serviceName,
-      domains: [{ host: domainName }], // Simple format that works
+    const port = domainConfig.port || 80;
+    const domainId = domainConfig.id || `${projectName}-${serviceName}-${domainName.replace(/\./g, '-')}-${Date.now()}`;
+
+    return this.mutate('domains.createDomain', {
+      id: domainId,
+      host: domainName,
+      https: domainConfig.https ?? true,
+      port: port,
+      path: domainConfig.path || '/',
+      middlewares: domainConfig.middlewares || [],
+      certificateResolver: domainConfig.certificateResolver || '',
+      wildcard: domainConfig.wildcard || false,
+      internalProtocol: domainConfig.internalProtocol || 'http',
+      destinationType: domainConfig.destinationType || 'service',
+      serviceDestination: domainConfig.serviceDestination || {
+        projectName,
+        serviceName,
+        protocol: 'http',
+        port: port,
+      },
     });
   }
 
   /**
-   * Remove a domain from a service
+   * Remove a domain by its ID via domains.deleteDomain tRPC procedure
    */
   async removeDomain(
-    projectName: string,
-    serviceName: string,
+    _projectName: string,
+    _serviceName: string,
     domainId: string
   ): Promise<unknown> {
-    // Validate inputs
-    validateProjectServiceName(projectName, 'project');
-    validateProjectServiceName(serviceName, 'service');
-
     try {
-      // First try to get current service to check domains
-      const service = await this.query('projects.inspectProject', { projectName });
-
-      // Find the specific service in the project
-      const serviceInfo = (service as any)?.services?.find((s: any) => s.name === serviceName);
-
-      // Filter out the domain to remove
-      const updatedDomains = (serviceInfo?.domains || []).filter((d: any) => d.id !== domainId && d.domain !== domainId);
-
-      // Update with filtered domains list
-      return this.mutate('services.app.updateDomains', {
-        projectName,
-        serviceName,
-        domains: updatedDomains,
+      return this.mutate('domains.deleteDomain', {
+        id: domainId,
       });
     } catch (error) {
       throw new Error(`Failed to remove domain ${domainId}: ${error instanceof Error ? error.message : String(error)}`);
@@ -2135,19 +2250,28 @@ export class EasyPanelClient {
   }
 
   /**
-   * List all domains for a service - FIXED to use service inspection
+   * List all domains via domains.listDomains tRPC procedure
+   * Note: EasyPanel lists ALL domains globally, caller can filter by project/service
    */
-  async listDomains(projectName: string, serviceName: string): Promise<Domain[]> {
+  async listDomains(projectName?: string, serviceName?: string): Promise<Domain[]> {
     try {
-      // Get project info which contains services with domains
-      const project = await this.query('projects.inspectProject', { projectName });
+      const allDomains = await this.query<Domain[]>('domains.listDomains', {});
 
-      // Find the specific service in the project
-      const serviceInfo = (project as any)?.services?.find((s: any) => s.name === serviceName);
+      // Filter by project/service if specified
+      if (projectName && serviceName) {
+        return (allDomains || []).filter((d: any) =>
+          d.serviceDestination?.projectName === projectName &&
+          d.serviceDestination?.serviceName === serviceName
+        );
+      }
+      if (projectName) {
+        return (allDomains || []).filter((d: any) =>
+          d.serviceDestination?.projectName === projectName
+        );
+      }
 
-      return serviceInfo?.domains || [];
+      return allDomains || [];
     } catch (error) {
-      // If service doesn't exist or error, return empty array
       throw new Error(`Failed to list domains: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
@@ -2161,7 +2285,7 @@ export class EasyPanelClient {
     domainConfig: DomainConfiguration
   ): Promise<DomainValidationResult> {
     // Use cache with short TTL for domain validation
-    return this.query('services.app.validateDomain', {
+    return this.query('domains.validateDomain', {
       projectName,
       serviceName,
       domainConfig,
@@ -2180,7 +2304,7 @@ export class EasyPanelClient {
     domain: string
   ): Promise<SLCertificate> {
     // Use cache with longer TTL for SSL certificates (change infrequently)
-    return this.query('services.app.getSSLCertificate', {
+    return this.query('domains.getSSLCertificate', {
       projectName,
       serviceName,
       domain,
@@ -2207,7 +2331,7 @@ export class EasyPanelClient {
       validateEmail(email);
     }
 
-    return this.mutate('services.app.requestSSLCertificate', {
+    return this.mutate('domains.requestSSLCertificate', {
       projectName,
       serviceName,
       domain,
@@ -2223,7 +2347,7 @@ export class EasyPanelClient {
     serviceName: string,
     domainId: string
   ): Promise<SLCertificate> {
-    return this.mutate('services.app.renewSSLCertificate', {
+    return this.mutate('domains.renewSSLCertificate', {
       projectName,
       serviceName,
       domainId,

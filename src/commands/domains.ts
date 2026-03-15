@@ -42,12 +42,16 @@ Examples:
         if (!result?.length) { console.log(chalk.dim('No domains configured.')); return; }
 
         printTable(
-          ['Host', 'Port', 'HTTPS', 'SSL Status'],
+          ['ID', 'Host', 'Port', 'HTTPS', 'Path', 'Destination'],
           result.map((d: any) => [
+            d.id ? d.id.substring(0, 20) : '—',
             d.host || '—',
             String(d.port || 80),
             d.https ? chalk.green('yes') : 'no',
-            d.sslCertificate?.status ? statusColor(d.sslCertificate.status) : '—',
+            d.path || '/',
+            d.serviceDestination
+              ? `${d.serviceDestination.projectName}/${d.serviceDestination.serviceName}:${d.serviceDestination.port}`
+              : d.destinationType || '—',
           ]),
           opts,
         );

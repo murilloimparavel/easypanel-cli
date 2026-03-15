@@ -5,8 +5,6 @@ description: |
   Covers deploy, projects, services, databases, domains, monitoring and multi-server contexts.
   Triggers: "easypanel", "ep", "deploy easypanel", "manage server", "panel"
 
-model: sonnet
-
 allowed-tools:
   - Bash
   - Read
@@ -29,12 +27,13 @@ memory: project
 
 ## Prerequisites
 
-1. **CLI installed:** `ep` must be in PATH (install via `npm install -g easypanel-cli`)
+1. **CLI installed:** `ep` must be in PATH (link via `sudo npm link /srv/projetos/easypanel-cli`)
 2. **Authenticated:** `ep whoami` should return server info
 3. **If not authenticated:** guide the user with `ep login`
 
 Quick check:
 ```bash
+which ep || sudo npm link /srv/projetos/easypanel-cli
 ep --version && ep whoami
 ```
 
@@ -261,6 +260,157 @@ ep services restart PROJECT SERVICE
 ep services build-status PROJECT SERVICE
 ep system restart easypanel -f    # Last resort
 ```
+
+## Operational Learnings (Battle-Tested)
+
+### Private GHCR — Always configure credentials
+
+Images from private GHCR repos are **not accessible** without authentication.
+EasyPanel needs `username` + `password` (GitHub PAT with `read:packages`) in the image source.
+
+**Via panel:** Service > Source > Registry Credentials
+**Via tRPC API:**
+```bash
+curl -s -X POST "https://${EP_URL}/api/trpc/services.deploy" \
+  -H "Content-Type: application/json" \
+  -H "x-api-token: ${EP_TOKEN}" \
+  -d '{"json":{
+    "projectName":"PROJECT",
+    "serviceName":"SERVICE",
+    "source":{
+      "type":"image",
+      "image":"ghcr.io/user/repo:latest",
+      "username":"GH_USERNAME",
+      "password":"GH_PAT_READ_PACKAGES"
+    }
+  }}'
+```
+
+**NEVER make packages/repos public as a workaround.** Always ask the user for a token.
+
+### Lazy Initialization of EasyPanelClient
+
+`EasyPanelClient` uses **lazy initialization**. The constructor is empty — credentials are loaded from `process.env` only on first API use via `ensureInitialized()`. This fixes the "EASYPANEL_URL environment variable is required" error that occurred when the config file existed but env vars were not set at instantiation time.
+
+**Implication:** The client can be instantiated without env vars. Credential validation only happens when an API call is actually made.
+
+### CLI v0.1.0 — Known Limitations
+
+| Command | Status | Workaround |
+|---------|--------|------------|
+| `ep domains add` | **FIXED** | Uses `domains.createDomain` (tRPC) |
+| `ep domains remove` | **FIXED** | Uses `domains.deleteDomain` (tRPC) |
+| `ep domains list` | **FIXED** | Uses `domains.listDomains` (tRPC) |
+| `ep services build-status` | **BROKEN** (404) | Check logs: `ep services logs` |
+| `ep projects list` | OK | — |
+| `ep projects inspect` | OK | — |
+| `ep services create` | OK | — |
+| `ep deploy image` | OK | — |
+| `ep services logs` | OK | — |
+| `ep services stats` | OK | — |
+| `ep services env set/get` | OK | — |
+| `ep system ip` | OK | — |
+| `ep monitor *` | OK | — |
+
+**Note:** Domain fix applied via lazy initialization + correct tRPC procedures (see section below).
+
+### Traefik — Port and routing
+
+- **Traefik** (EasyPanel's reverse proxy) routes automatically to the container
+- The `port` field in the domain defines which **container port** Traefik forwards to
+- If the app listens on port **3001**, set `port: 3001` on the domain
+- If using port **80** (default), no special configuration needed
+- EasyPanel generates automatic domains: `{service}-{project}.{IP}.sslip.io`
+- HTTPS via Let's Encrypt is automatic when `https: true`
+
+### Container won't start (0B memory)
+
+**Quick diagnosis:**
+```bash
+ep services stats PROJECT SERVICE    # If memory = 0B, container crashed
+ep services logs PROJECT SERVICE     # See startup error
+ep projects inspect PROJECT --json   # Check source.username/password
+```
+
+**Common causes:**
+1. **Private image without credentials** — container can't pull
+2. **Wrong port** — app listens on one port, domain points to another
+3. **Missing environment variables** — app crashes on startup
+4. **Native dependencies** — node-pty, better-sqlite3 need build tools in Dockerfile
+
+### Deploy with GitHub Actions + GHCR (recommended pattern)
+
+**Flow:**
+```
+Push → GitHub Actions (build Docker image) → GHCR → EasyPanel (pull image)
+```
+
+**Benefits:** Zero build on VPS, optimized image, versioning by SHA.
+
+### EasyPanel tRPC API — Domain Procedures (CORRECTED)
+
+EasyPanel uses tRPC. The correct procedures for domains are:
+
+| CLI Command | tRPC Procedure | Auth Header |
+|-------------|---------------|-------------|
+| `ep domains add` | `domains.createDomain` | `Authorization: Bearer TOKEN` |
+| `ep domains list` | `domains.listDomains` | `Authorization: Bearer TOKEN` |
+| `ep domains remove` | `domains.deleteDomain` | `Authorization: Bearer TOKEN` |
+
+**IMPORTANT:** Domain procedures require `Authorization: Bearer TOKEN` (NOT `x-api-token`). Service/project procedures work with both headers.
+
+**Correct payload for `domains.createDomain`:**
+```bash
+curl -s -X POST "https://${EP_URL}/api/trpc/domains.createDomain" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${EP_TOKEN}" \
+  -d '{"json":{
+    "id": "unique-domain-id",
+    "host": "example.com",
+    "https": true,
+    "port": 8080,
+    "path": "/",
+    "middlewares": [],
+    "certificateResolver": "",
+    "wildcard": false,
+    "internalProtocol": "http",
+    "destinationType": "service",
+    "serviceDestination": {
+      "projectName": "my-project",
+      "serviceName": "my-service",
+      "protocol": "http",
+      "port": 8080
+    }
+  }}'
+```
+
+**Other discovered domain procedures:**
+- `domains.updateDomain`
+- `domains.getPrimaryDomain`
+- `domains.setPrimaryDomain`
+- `settings.setServiceDomain`
+- `settings.getServiceDomain`
+- `settings.setPanelDomain`
+- `settings.getPanelDomain`
+
+### EasyPanel tRPC API (when CLI fails — general procedures)
+
+For operations not supported by the CLI, use the API directly:
+
+```bash
+# Inspect project (works)
+curl -s "https://${EP_URL}/api/trpc/projects.inspect?input=%7B%22json%22%3A%7B%22projectName%22%3A%22NAME%22%7D%7D" \
+  -H "x-api-token: ${EP_TOKEN}"
+
+# CLI config stored at:
+~/.config/easypanel/config.json
+```
+
+**Confirmed working procedures:**
+- `projects.listProjects` / `projects.inspectProject`
+- `services.createService` / `services.deployImage`
+- `domains.createDomain` / `domains.listDomains` / `domains.deleteDomain`
+- `monitor.*` / `system.*`
 
 ## MCP Server Mode
 

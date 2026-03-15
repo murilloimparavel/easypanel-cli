@@ -50,6 +50,24 @@
 | `performHealthCheck` | `ep monitor health` |
 | `getUser` | `ep whoami` |
 
+## Domain Procedures — tRPC (CORRECTED)
+
+The correct procedures for domains use the `domains.*` namespace, not `services.*`:
+
+| CLI Command | tRPC Procedure | Auth Header | Status |
+|-------------|---------------|-------------|--------|
+| `ep domains add` | `domains.createDomain` | `Authorization: Bearer` | **FIXED** |
+| `ep domains list` | `domains.listDomains` | `Authorization: Bearer` | **FIXED** |
+| `ep domains remove` | `domains.deleteDomain` | `Authorization: Bearer` | **FIXED** |
+
+**IMPORTANT:** Domain procedures require `Authorization: Bearer TOKEN` (NOT `x-api-token`). Service/project procedures work with both headers.
+
+Additional discovered procedures:
+- `domains.updateDomain`
+- `domains.getPrimaryDomain` / `domains.setPrimaryDomain`
+- `settings.setServiceDomain` / `settings.getServiceDomain`
+- `settings.setPanelDomain` / `settings.getPanelDomain`
+
 ## HIGH priority gaps (no CLI command yet)
 
 | Method | Description | Suggested command |
