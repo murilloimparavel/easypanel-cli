@@ -197,11 +197,12 @@ interface CacheStats {
 }
 
 export class EasyPanelClient {
-  private client: AxiosInstance;
+  private client: AxiosInstance | null = null;
   private token: string | null = null;
-  private baseUrl: string;
-  private email: string;
-  private password: string;
+  private baseUrl: string = '';
+  private email: string = '';
+  private password: string = '';
+  private initialized: boolean = false;
   private planDetector = getPlanDetector();
 
   // ==================== ERROR HANDLING ====================
@@ -579,6 +580,22 @@ export class EasyPanelClient {
   };
 
   constructor() {
+    // Lazy initialization — credentials are loaded from process.env
+    // only when ensureInitialized() is called (on first API use).
+    // This allows loadConfig() to populate process.env before validation.
+  }
+
+  /**
+   * Lazy initialization: reads credentials from process.env and creates
+   * the axios client. Called automatically before the first API request.
+   * This fixes the initialization order issue where getClient() was called
+   * before loadConfig() had a chance to populate process.env.
+   */
+  private ensureInitialized(): AxiosInstance {
+    if (this.initialized && this.client) {
+      return this.client;
+    }
+
     this.baseUrl = process.env.EASYPANEL_URL || '';
     this.email = process.env.EASYPANEL_EMAIL || '';
     this.password = process.env.EASYPANEL_PASSWORD || '';
@@ -586,13 +603,14 @@ export class EasyPanelClient {
 
     if (!this.baseUrl) {
       throw new EasyPanelError({
-        message: 'EASYPANEL_URL environment variable is required',
+        message: 'EASYPANEL_URL is not configured',
         category: ErrorCategory.VALIDATION,
         operation: 'initialization',
         suggestions: [
-          'Set the EASYPANEL_URL environment variable',
-          'Example: export EASYPANEL_URL="https://your-easypanel.com"',
-          'Ensure the URL includes the protocol (http:// or https://)'
+          'Run "ep login" to configure your EasyPanel server',
+          'Or set the EASYPANEL_URL environment variable',
+          'Or use --url flag: ep --url https://your-easypanel.com <command>',
+          'Example: export EASYPANEL_URL="https://your-easypanel.com"'
         ]
       });
     }
@@ -632,7 +650,7 @@ export class EasyPanelClient {
 
             // Retry the original request
             const originalRequest = error.config;
-            if (originalRequest) {
+            if (originalRequest && this.client) {
               originalRequest.headers['Authorization'] = `Bearer ${this.token}`;
               return this.client.request(originalRequest);
             }
@@ -645,6 +663,17 @@ export class EasyPanelClient {
         throw this.createError(error, undefined, operation);
       }
     );
+
+    this.initialized = true;
+    return this.client;
+  }
+
+  /**
+   * Get the HTTP client, initializing lazily if needed.
+   * All methods that make HTTP requests should use this instead of this.client directly.
+   */
+  private getHttpClient(): AxiosInstance {
+    return this.ensureInitialized();
   }
 
   /**
@@ -975,7 +1004,7 @@ export class EasyPanelClient {
       // EasyPanel requires input parameter even for queries without input
       const inputData = input !== undefined ? { json: input } : { json: null };
       const params = `?input=${encodeURIComponent(JSON.stringify(inputData))}`;
-      const response = await this.client.get<TRPCResponse<T>>(`/${procedure}${params}`);
+      const response = await this.getHttpClient().get<TRPCResponse<T>>(`/${procedure}${params}`);
       result = response.data.result.data.json;
 
       // Track successful operation
@@ -1034,7 +1063,7 @@ export class EasyPanelClient {
     let error: Error | undefined;
 
     try {
-      const response = await this.client.post<TRPCResponse<T>>(
+      const response = await this.getHttpClient().post<TRPCResponse<T>>(
         `/${procedure}`,
         { json: input } as TRPCRequest
       );
@@ -3716,6 +3745,14 @@ export function getClient(): EasyPanelClient {
     clientInstance = new EasyPanelClient();
   }
   return clientInstance;
+}
+
+/**
+ * Reset the singleton client instance.
+ * Useful when config changes (e.g., after loadConfig() or context switch).
+ */
+export function resetClient(): void {
+  clientInstance = null;
 }
 
 // Export error-related utilities for consumers
