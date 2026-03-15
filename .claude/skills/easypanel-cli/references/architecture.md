@@ -96,7 +96,7 @@ Auth: Authorization: Bearer <token>  (required for domain procedures)
 ## CLI Installation
 ```bash
 # Global link (recommended for development)
-sudo npm link /srv/projetos/easypanel-cli
+cd /path/to/easypanel-cli && npm link
 
 # Verify
 which ep && ep --version

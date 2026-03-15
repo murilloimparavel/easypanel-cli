@@ -27,13 +27,13 @@ memory: project
 
 ## Prerequisites
 
-1. **CLI installed:** `ep` must be in PATH (link via `sudo npm link /srv/projetos/easypanel-cli`)
+1. **CLI installed:** `ep` must be in PATH (link via `cd /path/to/easypanel-cli && npm link`)
 2. **Authenticated:** `ep whoami` should return server info
 3. **If not authenticated:** guide the user with `ep login`
 
 Quick check:
 ```bash
-which ep || sudo npm link /srv/projetos/easypanel-cli
+which ep || npm link .
 ep --version && ep whoami
 ```
 
