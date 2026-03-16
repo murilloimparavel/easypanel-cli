@@ -292,14 +292,40 @@ Examples:
 
         if (opts.json) { printJson(result); return; }
 
+        // Extract values from nested API response
+        const cpuPercent = typeof result.cpu === 'object' && result.cpu !== null
+          ? result.cpu.percent
+          : result.cpu;
+        const memUsage = typeof result.memory === 'object' && result.memory !== null
+          ? result.memory.usage
+          : result.memory;
+        const memPercent = typeof result.memory === 'object' && result.memory !== null
+          ? result.memory.percent
+          : undefined;
+        const memLimit = typeof result.memory === 'object' && result.memory !== null
+          ? result.memory.limit
+          : result.memoryLimit;
+        const netIn = typeof result.network === 'object' && result.network !== null
+          ? result.network.in
+          : result.networkIn;
+        const netOut = typeof result.network === 'object' && result.network !== null
+          ? result.network.out
+          : result.networkOut;
+
         console.log(chalk.bold(`\n${project}/${name} — Resource Usage\n`));
-        printTable(['Metric', 'Value'], [
-          ['CPU', `${result.cpu ?? '—'}%`],
-          ['Memory', result.memory ? formatBytes(result.memory) : '—'],
-          ['Memory Limit', result.memoryLimit ? formatBytes(result.memoryLimit) : '—'],
-          ['Network In', result.networkIn ? formatBytes(result.networkIn) : '—'],
-          ['Network Out', result.networkOut ? formatBytes(result.networkOut) : '—'],
-        ], opts);
+        const rows: string[][] = [
+          ['CPU', cpuPercent != null ? `${Number(cpuPercent).toFixed(2)}%` : '—'],
+          ['Memory', memUsage ? formatBytes(memUsage) : '—'],
+        ];
+        if (memPercent != null) {
+          rows.push(['Memory %', `${Number(memPercent).toFixed(2)}%`]);
+        }
+        rows.push(
+          ['Memory Limit', memLimit ? formatBytes(memLimit) : '—'],
+          ['Network In', netIn ? formatBytes(netIn) : '—'],
+          ['Network Out', netOut ? formatBytes(netOut) : '—'],
+        );
+        printTable(['Metric', 'Value'], rows, opts);
       } catch (err) {
         handleCliError(err, opts);
       }
