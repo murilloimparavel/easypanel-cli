@@ -1035,6 +1035,7 @@ export class EasyPanelClient {
     const cacheableProcedures = [
       'projects.listProjectsAndServices',
       'projects.inspectProject',
+      'services.app.inspectService',
       'services.redis.inspectService',
       'monitor.getServiceStats',
       'monitor.getAdvancedStats',
@@ -1143,12 +1144,14 @@ export class EasyPanelClient {
     'services.app.deployService': {
       service: [
         'services.app.getBuildStatus',
+        'services.app.inspectService',
         'monitor.getServiceStats'
       ]
     },
     'services.app.updateSourceImage': {
       service: [
         'services.app.getBuildStatus',
+        'services.app.inspectService',
         'monitor.getServiceStats'
       ],
       projectWide: true
@@ -1619,9 +1622,53 @@ export class EasyPanelClient {
   }
 
   /**
-   * Trigger deployment
+   * Inspect an app service (returns full service config including source, domains, etc.)
+   */
+  async inspectService(projectName: string, serviceName: string): Promise<unknown> {
+    return this.query('services.app.inspectService', { projectName, serviceName }, {
+      useCache: true,
+      ttl: 15000
+    });
+  }
+
+  /**
+   * Trigger deployment using the low-level deployService mutation.
+   * Note: This may fail for private registry images if credentials are not
+   * stored in the service source config. Prefer redeployService() instead.
    */
   async deployService(projectName: string, serviceName: string): Promise<unknown> {
+    return this.mutate('services.app.deployService', { projectName, serviceName });
+  }
+
+  /**
+   * Redeploy a service — inspects the current source config and re-applies it.
+   * For image-based services, this calls updateSourceImage (which triggers a
+   * fresh pull + deploy). Optional credentials override the stored ones.
+   * For git/dockerfile services, falls back to deployService.
+   */
+  async redeployService(
+    projectName: string,
+    serviceName: string,
+    opts?: { username?: string; password?: string },
+  ): Promise<unknown> {
+    // Inspect the service to get current source config
+    const svcInfo = await this.inspectService(projectName, serviceName) as any;
+    const source = svcInfo?.source;
+
+    if (source?.type === 'image' && source?.image) {
+      // For image-based services, re-apply the image source to trigger a fresh pull.
+      // This avoids the "unauthorized" error that deployService hits when the
+      // registry credentials are not stored in the service config.
+      return this.mutate('services.app.updateSourceImage', {
+        projectName,
+        serviceName,
+        image: source.image,
+        username: opts?.username ?? source.username ?? undefined,
+        password: opts?.password ?? source.password ?? undefined,
+      });
+    }
+
+    // For git/dockerfile sources, use the standard deploy mutation
     return this.mutate('services.app.deployService', { projectName, serviceName });
   }
 

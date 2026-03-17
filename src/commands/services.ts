@@ -76,8 +76,10 @@ Examples:
 
   services
     .command('redeploy <project> <name>')
-    .description('Trigger a new deployment')
-    .action(async (project, name, _, cmd) => {
+    .description('Trigger a new deployment (re-pulls image for image-based services)')
+    .option('--username <user>', 'Registry username (for private images)')
+    .option('--password <pass>', 'Registry password (for private images)')
+    .action(async (project, name, cmdOpts, cmd) => {
       const opts = cmd.optsWithGlobals() as GlobalOptions;
       loadConfig(opts.url, opts.token);
       requireAuth(opts);
@@ -85,7 +87,10 @@ Examples:
       const s = spinner(`Redeploying "${project}/${name}"...`);
       try {
         const client = getClient();
-        const result = await client.deployService(project, name) as any;
+        const result = await client.redeployService(project, name, {
+          username: cmdOpts.username,
+          password: cmdOpts.password,
+        }) as any;
         s.succeed(`Deployment triggered for "${project}/${name}"`);
         if (result?.buildId) console.log(chalk.dim(`  Build ID: ${result.buildId}`));
         if (opts.json) printJson(result);
@@ -343,12 +348,34 @@ Examples:
 
       try {
         const client = getClient();
-        const result = await client.getBuildStatus(project, name, cmdOpts.buildId) as any;
+        let result: any;
+
+        try {
+          result = await client.getBuildStatus(project, name, cmdOpts.buildId);
+        } catch (buildErr: any) {
+          // getBuildStatus may not exist on older EasyPanel versions — fall back to inspectService
+          const is404 = buildErr?.statusCode === 404
+            || buildErr?.message?.includes('NOT_FOUND')
+            || buildErr?.message?.includes('No procedure found');
+          if (is404) {
+            const inspect = await client.inspectService(project, name) as any;
+            const source = inspect?.source;
+            result = {
+              status: inspect?.enabled ? 'running' : 'stopped',
+              source: source?.type || 'unknown',
+              image: source?.image || '—',
+              buildId: null,
+            };
+          } else {
+            throw buildErr;
+          }
+        }
 
         if (opts.json) { printJson(result); return; }
 
         console.log(chalk.bold('Build:'), result.buildId || '—');
         console.log(chalk.bold('Status:'), statusColor(result.status || 'unknown'));
+        if (result.image) console.log(chalk.bold('Image:'), result.image);
         if (result.startTime) console.log(chalk.bold('Started:'), result.startTime);
         if (result.error) console.log(chalk.red('Error:'), result.error);
       } catch (err) {
