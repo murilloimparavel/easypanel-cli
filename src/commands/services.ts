@@ -11,6 +11,28 @@ import {
   handleCliError, requireAuth, confirm, spinner, statusColor, formatBytes,
 } from '../utils/output.js';
 
+/** Mask a password for display: show first 4 chars + '***', or just '***' if too short */
+function maskPassword(password: string | undefined | null): string {
+  if (!password) return '(none)';
+  if (password.length <= 4) return '***';
+  return password.slice(0, 4) + '***';
+}
+
+/** Known private registry hosts that typically require credentials */
+const PRIVATE_REGISTRY_PATTERNS = [
+  'ghcr.io',
+  'gcr.io',
+  'ecr.', // AWS ECR
+  'azurecr.io',
+  'registry.gitlab.com',
+  'quay.io',
+];
+
+function looksLikePrivateRegistry(image: string | undefined | null): boolean {
+  if (!image) return false;
+  return PRIVATE_REGISTRY_PATTERNS.some(pattern => image.includes(pattern));
+}
+
 export function registerServicesCommand(program: Command): void {
   const services = program.command('services').description('Manage app services');
 
@@ -28,6 +50,9 @@ Examples:
   $ ep services env set my-project my-service DB_HOST=localhost DB_PORT=5432
   $ ep services resources my-project my-service --mem-limit 512 --cpu-limit 1
   $ ep services build-status my-project my-service
+  $ ep services registry set my-project my-service --username user --password pass
+  $ ep services registry show my-project my-service
+  $ ep services registry clear my-project my-service
 `);
 
   services
@@ -94,6 +119,20 @@ Examples:
         s.succeed(`Deployment triggered for "${project}/${name}"`);
         if (result?.buildId) console.log(chalk.dim(`  Build ID: ${result.buildId}`));
         if (opts.json) printJson(result);
+
+        // Warn about missing credentials for private registries
+        if (!cmdOpts.username && !cmdOpts.password) {
+          try {
+            const svcInfo = await client.inspectService(project, name) as any;
+            const source = svcInfo?.source;
+            if (source?.type === 'image' && looksLikePrivateRegistry(source?.image) && !source?.username) {
+              console.log(chalk.yellow(`\n  ⚠ No registry credentials configured. If pull fails, use:`));
+              console.log(chalk.yellow(`    ep services registry set ${project} ${name} --username <user> --password <pass>`));
+            }
+          } catch {
+            // Non-critical — don't fail the redeploy over a warning check
+          }
+        }
       } catch (err) {
         s.fail('Failed to redeploy service');
         handleCliError(err, opts);
@@ -173,6 +212,117 @@ Examples:
         s.succeed(`Environment updated for "${project}/${name}"`);
       } catch (err) {
         s.fail('Failed to update environment variables');
+        handleCliError(err, opts);
+      }
+    });
+
+  // Registry credentials
+  const registry = services.command('registry').description('Manage Docker registry credentials');
+
+  registry
+    .command('set <project> <name>')
+    .description('Set registry credentials for a service (keeps current image)')
+    .requiredOption('--username <user>', 'Registry username')
+    .requiredOption('--password <pass>', 'Registry password/token')
+    .action(async (project, name, cmdOpts, cmd) => {
+      const opts = cmd.optsWithGlobals() as GlobalOptions;
+      loadConfig(opts.url, opts.token);
+      requireAuth(opts);
+
+      const s = spinner(`Setting registry credentials for "${project}/${name}"...`);
+      try {
+        const client = getClient();
+
+        // Inspect to get the current image
+        const svcInfo = await client.inspectService(project, name) as any;
+        const source = svcInfo?.source;
+        if (!source?.image) {
+          s.fail('Service does not have an image source configured');
+          console.error(chalk.dim('  Registry credentials can only be set on image-based services.'));
+          process.exit(1);
+        }
+
+        // Update credentials while keeping the same image
+        await client.deployFromImage(project, name, source.image, cmdOpts.username, cmdOpts.password);
+
+        s.succeed(`Registry credentials set for "${project}/${name}"`);
+        console.log(chalk.dim(`  Image:    ${source.image}`));
+        console.log(chalk.dim(`  Username: ${cmdOpts.username}`));
+        console.log(chalk.dim(`  Password: ${maskPassword(cmdOpts.password)}`));
+      } catch (err) {
+        s.fail('Failed to set registry credentials');
+        handleCliError(err, opts);
+      }
+    });
+
+  registry
+    .command('show <project> <name>')
+    .description('Show current registry configuration for a service')
+    .action(async (project, name, _, cmd) => {
+      const opts = cmd.optsWithGlobals() as GlobalOptions;
+      loadConfig(opts.url, opts.token);
+      requireAuth(opts);
+
+      try {
+        const client = getClient();
+        const svcInfo = await client.inspectService(project, name) as any;
+        const source = svcInfo?.source;
+
+        if (opts.json) {
+          printJson({
+            type: source?.type || 'unknown',
+            image: source?.image || null,
+            username: source?.username || null,
+            hasPassword: !!source?.password,
+          });
+          return;
+        }
+
+        console.log(chalk.bold(`\n${project}/${name} — Registry Config\n`));
+        console.log(`  Source type: ${source?.type || 'unknown'}`);
+        console.log(`  Image:      ${source?.image || '(none)'}`);
+        console.log(`  Username:   ${source?.username || '(none)'}`);
+        console.log(`  Password:   ${maskPassword(source?.password)}`);
+        console.log();
+      } catch (err) {
+        handleCliError(err, opts);
+      }
+    });
+
+  registry
+    .command('clear <project> <name>')
+    .description('Clear registry credentials from a service')
+    .option('-f, --force', 'Skip confirmation')
+    .action(async (project, name, cmdOpts, cmd) => {
+      const opts = cmd.optsWithGlobals() as GlobalOptions;
+      loadConfig(opts.url, opts.token);
+      requireAuth(opts);
+
+      if (!cmdOpts.force) {
+        try {
+          const yes = await confirm(`Clear registry credentials for "${project}/${name}"?`);
+          if (!yes) { console.log(chalk.dim('Cancelled.')); return; }
+        } catch { return; }
+      }
+
+      const s = spinner(`Clearing registry credentials for "${project}/${name}"...`);
+      try {
+        const client = getClient();
+
+        // Inspect to get the current image
+        const svcInfo = await client.inspectService(project, name) as any;
+        const source = svcInfo?.source;
+        if (!source?.image) {
+          s.fail('Service does not have an image source configured');
+          process.exit(1);
+        }
+
+        // Clear credentials by setting empty strings
+        await client.deployFromImage(project, name, source.image, '', '');
+
+        s.succeed(`Registry credentials cleared for "${project}/${name}"`);
+      } catch (err) {
+        s.fail('Failed to clear registry credentials');
         handleCliError(err, opts);
       }
     });
