@@ -1538,7 +1538,7 @@ export class EasyPanelClient {
       repo,
       ref,
       path,
-      dockerfilePath,
+      dockerfile: dockerfilePath,
     });
   }
 
